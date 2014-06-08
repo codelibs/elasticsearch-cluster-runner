@@ -1,4 +1,52 @@
-elasticsearch-cluster-runner
+Elasticsearch Cluster Runner
 ============================
 
-Launch Elasticsearch Cluster on One JVM Instance
+This project runs Elasticsearch cluster on one JVM instance for your development easily.
+
+## Preparations
+
+### Install Maven
+
+Download and install Maven 3 from http://maven.apache.org/.
+
+### Clone This Project
+
+    git clone https://github.com/codelibs/elasticsearch-cluster-runner.git
+
+### Build This Project
+
+    mvn compile
+
+## Run/Stop Elasticsearch Cluster
+
+### Run Cluster
+
+Run:
+
+    mvn exec:java 
+
+The default cluster has 3 nodes and the root directory for Elasticsearch is es\_home.
+Nodes use 9201-9203 port for HTTP and 9301-9303 port for Transport.
+If you want to change the number of node, Run:
+
+    mvn exec:java -Dexec.args="-basePath es_home -numOfNode 4"
+
+### Stop Cluster
+
+Type Ctrl-c or kill the process.
+
+## Others
+
+### Install Plugins
+
+This project does not have plugin command to install plugins.
+Therefore, you need to put plugins manually.
+For example, installing solr-api plugin:
+
+    mkdir es_home/plugins
+    mkdir es_home/plugins/solr-api
+    wget http://repo1.maven.org/maven2/org/codelibs/elasticsearch-solr-api/1.4.0/elasticsearch-solr-api-1.4.0.zip
+    unzip elasticsearch-solr-api-1.4.0.zip 
+    rm elasticsearch-solr-api-1.4.0.zip 
+
+
