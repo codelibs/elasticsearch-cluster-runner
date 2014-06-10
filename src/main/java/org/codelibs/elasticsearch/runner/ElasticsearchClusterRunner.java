@@ -20,21 +20,21 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 public class ElasticsearchClusterRunner {
-    private static final String LOGGING_YAML = "logging.yml";
+    protected static final String LOGGING_YAML = "logging.yml";
 
-    private static final String ELASTICSEARCH_YAML = "elasticsearch.yml";
+    protected static final String ELASTICSEARCH_YAML = "elasticsearch.yml";
 
-    private static final String WORK_DIR = "work";
+    protected static final String WORK_DIR = "work";
 
-    private static final String DATA_DIR = "data";
+    protected static final String DATA_DIR = "data";
 
-    private static final String LOGS_DIR = "logs";
+    protected static final String LOGS_DIR = "logs";
 
-    private static final String PLUGINS_DIR = "plugins";
+    protected static final String PLUGINS_DIR = "plugins";
 
-    private static final String CONFIG_DIR = "config";
+    protected static final String CONFIG_DIR = "config";
 
-    private List<Node> nodeList = new ArrayList<>();
+    protected List<Node> nodeList = new ArrayList<>();
 
     @Option(name = "-basePath", usage = "Base path for Elasticsearch.")
     protected String basePath;
@@ -156,7 +156,7 @@ public class ElasticsearchClusterRunner {
         }
     }
 
-    private Node buildNode(final int number) {
+    protected Node buildNode(final int number) {
         final Path confPath = Paths.get(basePath, CONFIG_DIR);
         final Path pluginsPath = Paths.get(basePath, PLUGINS_DIR);
         final Path logsPath = Paths.get(basePath, LOGS_DIR, "node_" + number);
@@ -207,11 +207,11 @@ public class ElasticsearchClusterRunner {
         return nodeList.size();
     }
 
-    private void print(final String line) {
+    protected void print(final String line) {
         System.out.println(line);
     }
 
-    private void createDir(final Path path) {
+    protected void createDir(final Path path) {
         if (!Files.exists(path)) {
             print("Creating " + path);
             try {
