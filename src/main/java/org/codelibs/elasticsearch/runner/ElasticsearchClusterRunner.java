@@ -12,7 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.logging.log4j.LogConfigurator;
 import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.internal.InternalNode;
 import org.kohsuke.args4j.CmdLineException;
@@ -194,7 +196,9 @@ public class ElasticsearchClusterRunner {
         print("Log Directory:  " + logsPath);
         print("----------------------------------------");
 
-        final Node node = new InternalNode(settingsBuilder.build(), false);
+        Settings settings = settingsBuilder.build();
+        LogConfigurator.configure(settings);
+        final Node node = new InternalNode(settings, false);
         node.start();
         return node;
     }
