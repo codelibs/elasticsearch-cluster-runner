@@ -198,7 +198,7 @@ public class ElasticsearchClusterRunner {
 
         Settings settings = settingsBuilder.build();
         LogConfigurator.configure(settings);
-        final Node node = new InternalNode(settings, false);
+        final Node node = new InternalNode(settings, true);
         node.start();
         return node;
     }
