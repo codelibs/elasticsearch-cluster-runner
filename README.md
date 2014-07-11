@@ -50,3 +50,8 @@ For example, installing solr-api plugin:
     rm elasticsearch-solr-api-1.4.0.zip 
 
 
+### Issues/Questions
+
+Please file an [issue](https://github.com/codelibs/elasticsearch-cluster-runner/issues "issue").
+(Japanese forum is [here](https://github.com/codelibs/codelibs-ja-forum "here").)
+
