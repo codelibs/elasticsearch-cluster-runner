@@ -4,13 +4,18 @@ import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilde
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
@@ -20,21 +25,33 @@ import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRespon
 import org.elasticsearch.action.admin.indices.flush.FlushResponse;
 import org.elasticsearch.action.admin.indices.optimize.OptimizeResponse;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
+import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.logging.ESLogger;
+import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.logging.log4j.LogConfigurator;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.internal.InternalNode;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 public class ElasticsearchClusterRunner {
+    private static final ESLogger logger = Loggers
+            .getLogger(ElasticsearchClusterRunner.class);
+
     protected static final String LOGGING_YAML = "logging.yml";
 
     protected static final String ELASTICSEARCH_YAML = "elasticsearch.yml";
@@ -68,6 +85,12 @@ public class ElasticsearchClusterRunner {
 
     @Option(name = "-indexStoreType", usage = "Index store type.")
     protected String indexStoreType = "default";
+
+    @Option(name = "-useStdOut", usage = "Print logs to stdout.")
+    protected boolean useStdOut = true;
+
+    @Option(name = "-throwOnFailure", usage = "Throw an exception on a failure.")
+    protected boolean throwOnFailure = true;
 
     public static void main(final String[] args) {
         final ElasticsearchClusterRunner runner = new ElasticsearchClusterRunner();
@@ -107,6 +130,59 @@ public class ElasticsearchClusterRunner {
     public void close() {
         for (final Node node : nodeList) {
             node.close();
+        }
+        print("Closed all nodes.");
+    }
+
+    public void clean() {
+        final Path bPath = FileSystems.getDefault().getPath(basePath);
+        try {
+            Files.walkFileTree(bPath, new FileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(final Path dir,
+                        final BasicFileAttributes attrs) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(final Path file,
+                        final BasicFileAttributes attrs) throws IOException {
+                    Files.delete(file);
+                    return checkIfExist(file);
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(final Path file,
+                        final IOException exc) throws IOException {
+                    throw exc;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(final Path dir,
+                        final IOException exc) throws IOException {
+                    if (exc == null) {
+                        Files.delete(dir);
+                        if (!Files.exists(dir)) {
+                            return FileVisitResult.CONTINUE;
+                        } else {
+                            throw new IOException();
+                        }
+                    } else {
+                        throw exc;
+                    }
+                }
+
+                private FileVisitResult checkIfExist(final Path path)
+                        throws IOException {
+                    if (Files.exists(path)) {
+                        throw new IOException("Failed to delete " + path);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            print("Deleted " + basePath);
+        } catch (final IOException e) {
+            print("Failed to delete " + basePath);
         }
     }
 
@@ -229,7 +305,11 @@ public class ElasticsearchClusterRunner {
     }
 
     protected void print(final String line) {
-        System.out.println(line);
+        if (useStdOut) {
+            System.out.println(line);
+        } else {
+            logger.info(line);
+        }
     }
 
     protected void createDir(final Path path) {
@@ -259,14 +339,12 @@ public class ElasticsearchClusterRunner {
                         .waitForGreenStatus().waitForEvents(Priority.LANGUID)
                         .waitForRelocatingShards(0)).actionGet();
         if (actionGet.isTimedOut()) {
-            throw new ClusterRunnerException(
-                    "ensureGreen timed out, cluster state:\n"
-                            + client().admin().cluster().prepareState().get()
+            onFailure("ensureGreen timed out, cluster state:\n"
+                    + client().admin().cluster().prepareState().get()
                             .getState().prettyPrint()
-                            + "\n"
-                            + client().admin().cluster()
-                            .preparePendingClusterTasks().get()
-                            .prettyPrint());
+                    + "\n"
+                    + client().admin().cluster().preparePendingClusterTasks()
+                            .get().prettyPrint(), actionGet);
         }
         return actionGet.getStatus();
     }
@@ -279,15 +357,13 @@ public class ElasticsearchClusterRunner {
                         .waitForRelocatingShards(0).waitForYellowStatus()
                         .waitForEvents(Priority.LANGUID)).actionGet();
         if (actionGet.isTimedOut()) {
-            throw new ClusterRunnerException(
-                    "ensureYellow timed out, cluster state:\n"
-                            + "\n"
-                            + client().admin().cluster().prepareState().get()
+            onFailure("ensureYellow timed out, cluster state:\n"
+                    + "\n"
+                    + client().admin().cluster().prepareState().get()
                             .getState().prettyPrint()
-                            + "\n"
-                            + client().admin().cluster()
-                            .preparePendingClusterTasks().get()
-                            .prettyPrint());
+                    + "\n"
+                    + client().admin().cluster().preparePendingClusterTasks()
+                            .get().prettyPrint(), actionGet);
         }
         return actionGet.getStatus();
     }
@@ -298,15 +374,13 @@ public class ElasticsearchClusterRunner {
         final ClusterHealthResponse actionGet = client().admin().cluster()
                 .health(request).actionGet();
         if (actionGet.isTimedOut()) {
-            throw new ClusterRunnerException(
-                    "waitForRelocation timed out, cluster state:\n"
-                            + "\n"
-                            + client().admin().cluster().prepareState().get()
+            onFailure("waitForRelocation timed out, cluster state:\n"
+                    + "\n"
+                    + client().admin().cluster().prepareState().get()
                             .getState().prettyPrint()
-                            + "\n"
-                            + client().admin().cluster()
-                            .preparePendingClusterTasks().get()
-                            .prettyPrint());
+                    + "\n"
+                    + client().admin().cluster().preparePendingClusterTasks()
+                            .get().prettyPrint(), actionGet);
         }
         return actionGet.getStatus();
     }
@@ -318,7 +392,7 @@ public class ElasticsearchClusterRunner {
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
-            throw new ClusterRunnerException(shardFailures.toString());
+            onFailure(shardFailures.toString(), actionGet);
         }
         return actionGet;
     }
@@ -330,7 +404,7 @@ public class ElasticsearchClusterRunner {
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
-            throw new ClusterRunnerException(shardFailures.toString());
+            onFailure(shardFailures.toString(), actionGet);
         }
         return actionGet;
     }
@@ -342,7 +416,7 @@ public class ElasticsearchClusterRunner {
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
-            throw new ClusterRunnerException(shardFailures.toString());
+            onFailure(shardFailures.toString(), actionGet);
         }
         return actionGet;
     }
@@ -356,9 +430,9 @@ public class ElasticsearchClusterRunner {
                 .setSettings(
                         settings != null ? settings
                                 : ImmutableSettings.Builder.EMPTY_SETTINGS)
-                                .execute().actionGet();
-        if (actionGet.isAcknowledged()) {
-            throw new ClusterRunnerException("Failed to create " + index + ".");
+                .execute().actionGet();
+        if (!actionGet.isAcknowledged()) {
+            onFailure("Failed to create " + index + ".", actionGet);
         }
         return actionGet;
     }
@@ -368,4 +442,50 @@ public class ElasticsearchClusterRunner {
                 .prepareExists(index).execute().actionGet();
         return actionGet.isExists();
     }
+
+    public IndexResponse insert(final String index, final String type,
+            final String id, final String source) {
+        final IndexResponse actionGet = client().prepareIndex(index, type, id)
+                .setSource(source).setRefresh(true).execute().actionGet();
+        if (!actionGet.isCreated()) {
+            onFailure("Failed to insert " + id + " into " + index + "/" + type
+                    + ".", actionGet);
+        }
+        return actionGet;
+    }
+
+    public DeleteResponse delete(final String index, final String type,
+            final String id) {
+        final DeleteResponse actionGet = client()
+                .prepareDelete(index, type, id).setRefresh(true).execute()
+                .actionGet();
+        if (!actionGet.isFound()) {
+            onFailure("Failed to delete " + id + " from " + index + "/" + type
+                    + ".", actionGet);
+        }
+        return actionGet;
+    }
+
+    public SearchResponse search(final String index, final String type,
+            final QueryBuilder queryBuilder, final SortBuilder sort,
+            final int from, final int size) {
+        final SearchResponse actionGet = client()
+                .prepareSearch(index)
+                .setTypes(type)
+                .setQuery(
+                        queryBuilder != null ? queryBuilder : QueryBuilders
+                                .matchAllQuery())
+                .addSort(sort != null ? sort : SortBuilders.scoreSort())
+                .setFrom(from).setSize(size).execute().actionGet();
+        return actionGet;
+    }
+
+    private void onFailure(final String message, final ActionResponse response) {
+        if (throwOnFailure) {
+            throw new ClusterRunnerException(message, response);
+        } else {
+            print(message);
+        }
+    }
+
 }

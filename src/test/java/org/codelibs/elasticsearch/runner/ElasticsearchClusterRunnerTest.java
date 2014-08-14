@@ -1,57 +1,69 @@
 package org.codelibs.elasticsearch.runner;
 
-import java.io.File;
-
-import junit.framework.Test;
 import junit.framework.TestCase;
-import junit.framework.TestSuite;
 
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
+import org.elasticsearch.search.sort.SortBuilders;
 
 public class ElasticsearchClusterRunnerTest extends TestCase {
-    public ElasticsearchClusterRunnerTest(String testName) {
-        super(testName);
+
+    private ElasticsearchClusterRunner runner;
+
+    @Override
+    protected void setUp() throws Exception {
+        runner = new ElasticsearchClusterRunner();
+        runner.build();
     }
 
-    public static Test suite() {
-        return new TestSuite(ElasticsearchClusterRunnerTest.class);
+    @Override
+    protected void tearDown() throws Exception {
+        runner.close();
+        runner.clean();
     }
 
     public void test_runCluster() throws Exception {
-        ElasticsearchClusterRunner runner = new ElasticsearchClusterRunner();
-        runner.build(null);
 
         assertEquals(3, runner.getNodeSize());
-        Node node1 = runner.getNode(0);
+        final Node node1 = runner.getNode(0);
         assertNotNull(node1);
-        Node node2 = runner.getNode(1);
+        final Node node2 = runner.getNode(1);
         assertNotNull(node2);
-        Node node3 = runner.getNode(2);
+        final Node node3 = runner.getNode(2);
         assertNotNull(node3);
 
-        Client client1 = node1.client();
-        client1.admin().cluster().prepareHealth().setWaitForYellowStatus()
-                .execute().actionGet();
+        assertNotNull(runner.client());
 
-        IndexResponse indexResponse = client1
-                .prepareIndex("test_index", "test_type", "1")
-                .setSource("{\"id\":\"1\",\"message\":\"Hello 1\"}").execute()
-                .actionGet();
-        assertTrue(indexResponse.isCreated());
+        runner.ensureYellow();
 
-        GetResponse getResponse = client1
-                .prepareGet("test_index", "test_type", "1").execute()
-                .actionGet();
-        assertTrue(getResponse.isExists());
+        final String index = "test_index";
+        final String type = "test_type";
+        for (int i = 1; i <= 1000; i++) {
+            final IndexResponse indexResponse1 = runner.insert(index, type,
+                    String.valueOf(i), "{\"id\":\"" + i + "\",\"msg\":\"test "
+                            + i + "\"}");
+            assertTrue(indexResponse1.isCreated());
+        }
 
-        runner.close();
+        {
+            final SearchResponse searchResponse = runner.search(index, type,
+                    null, null, 0, 10);
+            assertEquals(1000, searchResponse.getHits().getTotalHits());
+            assertEquals(10, searchResponse.getHits().hits().length);
+        }
 
-        Thread.sleep(5000);
+        {
+            final SearchResponse searchResponse = runner.search(index, type,
+                    QueryBuilders.matchAllQuery(),
+                    SortBuilders.fieldSort("id"), 0, 10);
+            assertEquals(1000, searchResponse.getHits().getTotalHits());
+            assertEquals(10, searchResponse.getHits().hits().length);
+        }
 
-        new File(runner.basePath).delete();
+        runner.delete(index, type, String.valueOf(1));
+
     }
 
 }
