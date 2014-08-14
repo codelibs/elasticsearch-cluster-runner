@@ -11,6 +11,19 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.elasticsearch.action.ShardOperationFailedException;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
+import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
+import org.elasticsearch.action.admin.indices.flush.FlushResponse;
+import org.elasticsearch.action.admin.indices.optimize.OptimizeResponse;
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
+import org.elasticsearch.client.AdminClient;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.client.Requests;
+import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.logging.log4j.LogConfigurator;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -53,6 +66,9 @@ public class ElasticsearchClusterRunner {
     @Option(name = "-clusterName", usage = "Cluster name.")
     protected String clusterName = "elasticsearch-cluster-runner";
 
+    @Option(name = "-indexStoreType", usage = "Index store type.")
+    protected String indexStoreType = "default";
+
     public static void main(final String[] args) {
         final ElasticsearchClusterRunner runner = new ElasticsearchClusterRunner();
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -94,7 +110,7 @@ public class ElasticsearchClusterRunner {
         }
     }
 
-    public void build(final String[] args) {
+    public void build(final String... args) {
         if (args != null) {
             final CmdLineParser parser = new CmdLineParser(this);
             parser.setUsageWidth(80);
@@ -188,6 +204,7 @@ public class ElasticsearchClusterRunner {
         settingsBuilder.put("http.enabled", true);
         settingsBuilder.put("transport.tcp.port", transportPort);
         settingsBuilder.put("http.port", httpPort);
+        settingsBuilder.put("index.store.type", indexStoreType);
 
         print("Node Name:      " + nodeName);
         print("HTTP Port:      " + httpPort);
@@ -196,7 +213,7 @@ public class ElasticsearchClusterRunner {
         print("Log Directory:  " + logsPath);
         print("----------------------------------------");
 
-        Settings settings = settingsBuilder.build();
+        final Settings settings = settingsBuilder.build();
         LogConfigurator.configure(settings);
         final Node node = new InternalNode(settings, true);
         node.start();
@@ -224,5 +241,131 @@ public class ElasticsearchClusterRunner {
                 throw new ClusterRunnerException("Failed to create " + path, e);
             }
         }
+    }
+
+    public Client client() {
+        return getNode(0).client();
+    }
+
+    public AdminClient admin() {
+        return client().admin();
+    }
+
+    public ClusterHealthStatus ensureGreen(final String... indices) {
+        final ClusterHealthResponse actionGet = client()
+                .admin()
+                .cluster()
+                .health(Requests.clusterHealthRequest(indices)
+                        .waitForGreenStatus().waitForEvents(Priority.LANGUID)
+                        .waitForRelocatingShards(0)).actionGet();
+        if (actionGet.isTimedOut()) {
+            throw new ClusterRunnerException(
+                    "ensureGreen timed out, cluster state:\n"
+                            + client().admin().cluster().prepareState().get()
+                            .getState().prettyPrint()
+                            + "\n"
+                            + client().admin().cluster()
+                            .preparePendingClusterTasks().get()
+                            .prettyPrint());
+        }
+        return actionGet.getStatus();
+    }
+
+    public ClusterHealthStatus ensureYellow(final String... indices) {
+        final ClusterHealthResponse actionGet = client()
+                .admin()
+                .cluster()
+                .health(Requests.clusterHealthRequest(indices)
+                        .waitForRelocatingShards(0).waitForYellowStatus()
+                        .waitForEvents(Priority.LANGUID)).actionGet();
+        if (actionGet.isTimedOut()) {
+            throw new ClusterRunnerException(
+                    "ensureYellow timed out, cluster state:\n"
+                            + "\n"
+                            + client().admin().cluster().prepareState().get()
+                            .getState().prettyPrint()
+                            + "\n"
+                            + client().admin().cluster()
+                            .preparePendingClusterTasks().get()
+                            .prettyPrint());
+        }
+        return actionGet.getStatus();
+    }
+
+    public ClusterHealthStatus waitForRelocation() {
+        final ClusterHealthRequest request = Requests.clusterHealthRequest()
+                .waitForRelocatingShards(0);
+        final ClusterHealthResponse actionGet = client().admin().cluster()
+                .health(request).actionGet();
+        if (actionGet.isTimedOut()) {
+            throw new ClusterRunnerException(
+                    "waitForRelocation timed out, cluster state:\n"
+                            + "\n"
+                            + client().admin().cluster().prepareState().get()
+                            .getState().prettyPrint()
+                            + "\n"
+                            + client().admin().cluster()
+                            .preparePendingClusterTasks().get()
+                            .prettyPrint());
+        }
+        return actionGet.getStatus();
+    }
+
+    public FlushResponse flush() {
+        waitForRelocation();
+        final FlushResponse actionGet = client().admin().indices()
+                .prepareFlush().execute().actionGet();
+        final ShardOperationFailedException[] shardFailures = actionGet
+                .getShardFailures();
+        if (shardFailures != null && shardFailures.length != 0) {
+            throw new ClusterRunnerException(shardFailures.toString());
+        }
+        return actionGet;
+    }
+
+    public RefreshResponse refresh() {
+        waitForRelocation();
+        final RefreshResponse actionGet = client().admin().indices()
+                .prepareRefresh().execute().actionGet();
+        final ShardOperationFailedException[] shardFailures = actionGet
+                .getShardFailures();
+        if (shardFailures != null && shardFailures.length != 0) {
+            throw new ClusterRunnerException(shardFailures.toString());
+        }
+        return actionGet;
+    }
+
+    public OptimizeResponse optimize(final boolean forece) {
+        waitForRelocation();
+        final OptimizeResponse actionGet = client().admin().indices()
+                .prepareOptimize().setForce(forece).execute().actionGet();
+        final ShardOperationFailedException[] shardFailures = actionGet
+                .getShardFailures();
+        if (shardFailures != null && shardFailures.length != 0) {
+            throw new ClusterRunnerException(shardFailures.toString());
+        }
+        return actionGet;
+    }
+
+    public CreateIndexResponse createIndex(final String index,
+            final Settings settings) {
+        final CreateIndexResponse actionGet = client()
+                .admin()
+                .indices()
+                .prepareCreate(index)
+                .setSettings(
+                        settings != null ? settings
+                                : ImmutableSettings.Builder.EMPTY_SETTINGS)
+                                .execute().actionGet();
+        if (actionGet.isAcknowledged()) {
+            throw new ClusterRunnerException("Failed to create " + index + ".");
+        }
+        return actionGet;
+    }
+
+    public boolean indexExists(final String index) {
+        final IndicesExistsResponse actionGet = client().admin().indices()
+                .prepareExists(index).execute().actionGet();
+        return actionGet.isExists();
     }
 }
