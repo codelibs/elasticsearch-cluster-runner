@@ -98,7 +98,7 @@ public class ElasticsearchClusterRunner {
     protected String clusterName = "elasticsearch-cluster-runner";
 
     @Option(name = "-indexStoreType", usage = "Index store type.")
-    protected String indexStoreType = "default";
+    protected String indexStoreType;
 
     @Option(name = "-useStdOut", usage = "Print logs to stdout.")
     protected boolean useStdOut = true;
@@ -366,7 +366,7 @@ public class ElasticsearchClusterRunner {
 
     protected void putIfAbsent(final ImmutableSettings.Builder settingsBuilder,
             final String key, final String value) {
-        if (settingsBuilder.get(key) == null) {
+        if (settingsBuilder.get(key) == null && value != null) {
             settingsBuilder.put(key, value);
         }
     }
