@@ -31,6 +31,8 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
+import org.elasticsearch.cluster.ClusterService;
+import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.logging.ESLogger;
@@ -48,6 +50,12 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
+/**
+ * ElasticsearchClusterRunner manages multiple Elasticsearch instances.
+ *
+ * @author shinsuke
+ *
+ */
 public class ElasticsearchClusterRunner {
     private static final ESLogger logger = Loggers
             .getLogger(ElasticsearchClusterRunner.class);
@@ -91,6 +99,8 @@ public class ElasticsearchClusterRunner {
 
     @Option(name = "-throwOnFailure", usage = "Throw an exception on a failure.")
     protected boolean throwOnFailure = true;
+
+    protected Builder builder;
 
     public static void main(final String[] args) {
         final ElasticsearchClusterRunner runner = new ElasticsearchClusterRunner();
@@ -186,6 +196,11 @@ public class ElasticsearchClusterRunner {
         }
     }
 
+    public ElasticsearchClusterRunner onBuild(Builder builder) {
+        this.builder = builder;
+        return this;
+    }
+
     public void build(final String... args) {
         if (args != null) {
             final CmdLineParser parser = new CmdLineParser(this);
@@ -263,24 +278,33 @@ public class ElasticsearchClusterRunner {
 
         final ImmutableSettings.Builder settingsBuilder = settingsBuilder();
 
-        settingsBuilder.put("path.conf", confPath.toAbsolutePath().toString());
-        settingsBuilder.put("path.data", dataPath.toAbsolutePath().toString());
-        settingsBuilder.put("path.work", workPath.toAbsolutePath().toString());
-        settingsBuilder.put("path.logs", logsPath.toAbsolutePath().toString());
-        settingsBuilder.put("path.plugins", pluginsPath.toAbsolutePath()
+        if (builder != null) {
+            builder.build(number, settingsBuilder);
+        }
+
+        putIfAbsent(settingsBuilder, "path.conf", confPath.toAbsolutePath()
                 .toString());
+        putIfAbsent(settingsBuilder, "path.data", dataPath.toAbsolutePath()
+                .toString());
+        putIfAbsent(settingsBuilder, "path.work", workPath.toAbsolutePath()
+                .toString());
+        putIfAbsent(settingsBuilder, "path.logs", logsPath.toAbsolutePath()
+                .toString());
+        putIfAbsent(settingsBuilder, "path.plugins", pluginsPath
+                .toAbsolutePath().toString());
 
         final String nodeName = "Node " + number;
         final int transportPort = baseTransportPort + number;
         final int httpPort = baseHttpPort + number;
-        settingsBuilder.put("cluster.name", clusterName);
-        settingsBuilder.put("node.name", nodeName);
-        settingsBuilder.put("node.master", true);
-        settingsBuilder.put("node.data", true);
-        settingsBuilder.put("http.enabled", true);
-        settingsBuilder.put("transport.tcp.port", transportPort);
-        settingsBuilder.put("http.port", httpPort);
-        settingsBuilder.put("index.store.type", indexStoreType);
+        putIfAbsent(settingsBuilder, "cluster.name", clusterName);
+        putIfAbsent(settingsBuilder, "node.name", nodeName);
+        putIfAbsent(settingsBuilder, "node.master", String.valueOf(true));
+        putIfAbsent(settingsBuilder, "node.data", String.valueOf(true));
+        putIfAbsent(settingsBuilder, "http.enabled", String.valueOf(true));
+        putIfAbsent(settingsBuilder, "transport.tcp.port",
+                String.valueOf(transportPort));
+        putIfAbsent(settingsBuilder, "http.port", String.valueOf(httpPort));
+        putIfAbsent(settingsBuilder, "index.store.type", indexStoreType);
 
         print("Node Name:      " + nodeName);
         print("HTTP Port:      " + httpPort);
@@ -296,8 +320,27 @@ public class ElasticsearchClusterRunner {
         return node;
     }
 
+    protected void putIfAbsent(final ImmutableSettings.Builder settingsBuilder,
+            final String key, final String value) {
+        if (settingsBuilder.get(key) == null) {
+            settingsBuilder.put(key, value);
+        }
+    }
+
     public Node getNode(final int i) {
         return nodeList.get(i);
+    }
+
+    public Node getNode(final String name) {
+        if (name == null) {
+            return null;
+        }
+        for (final Node node : nodeList) {
+            if (name.equals(node.settings().get("name"))) {
+                return node;
+            }
+        }
+        return null;
     }
 
     public int getNodeSize() {
@@ -323,8 +366,36 @@ public class ElasticsearchClusterRunner {
         }
     }
 
+    public Node node() {
+        for (final Node node : nodeList) {
+            if (!node.isClosed()) {
+                return node;
+            }
+        }
+        throw new ClusterRunnerException("All nodes are closed.");
+    }
+
+    public synchronized Node masterNode() {
+        final ClusterState state = client().admin().cluster().prepareState()
+                .execute().actionGet().getState();
+        final String name = state.nodes().masterNode().name();
+        return getNode(name);
+    }
+
+    public synchronized Node nonMasterNode() {
+        final ClusterState state = client().admin().cluster().prepareState()
+                .execute().actionGet().getState();
+        final String name = state.nodes().masterNode().name();
+        for (final Node node : nodeList) {
+            if (!node.isClosed() && !name.equals(node.settings().get("name"))) {
+                return node;
+            }
+        }
+        return null;
+    }
+
     public Client client() {
-        return getNode(0).client();
+        return node().client();
     }
 
     public AdminClient admin() {
@@ -409,10 +480,10 @@ public class ElasticsearchClusterRunner {
         return actionGet;
     }
 
-    public OptimizeResponse optimize(final boolean forece) {
+    public OptimizeResponse optimize(final boolean force) {
         waitForRelocation();
         final OptimizeResponse actionGet = client().admin().indices()
-                .prepareOptimize().setForce(forece).execute().actionGet();
+                .prepareOptimize().setForce(force).execute().actionGet();
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
@@ -480,6 +551,18 @@ public class ElasticsearchClusterRunner {
         return actionGet;
     }
 
+    public ClusterService clusterService() {
+        return getInstance(ClusterService.class);
+    }
+
+    public synchronized <T> T getInstance(final Class<T> clazz) {
+        final Node node = masterNode();
+        if (node instanceof InternalNode) {
+            return ((InternalNode) node).injector().getInstance(clazz);
+        }
+        return null;
+    }
+
     private void onFailure(final String message, final ActionResponse response) {
         if (throwOnFailure) {
             throw new ClusterRunnerException(message, response);
@@ -488,4 +571,17 @@ public class ElasticsearchClusterRunner {
         }
     }
 
+    /**
+     * This builder sets parameters to create a node
+     *
+     * @author shinsuke
+     */
+    public interface Builder {
+
+        /**
+         * @param index an index of nodes
+         * @param settingsBuilder a builder instance to create a node
+         */
+        void build(int index, ImmutableSettings.Builder settingsBuilder);
+    }
 }
