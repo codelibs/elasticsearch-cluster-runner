@@ -37,6 +37,19 @@ Type Ctrl-c or kill the process.
 
 ## Others
 
+### Use JUnit
+
+Put elasticsearch-cluster-runner as test scope:
+
+    <dependency>
+        <groupId>org.codelibs</groupId>
+        <artifactId>elasticsearch-cluster-runner</artifactId>
+        <version>1.3.2.0</version>
+        <scope>test</scope>
+    </dependency>
+
+and see [ElasticsearchClusterRunnerTest](https://github.com/codelibs/elasticsearch-cluster-runner/blob/master/src/test/java/org/codelibs/elasticsearch/runner/ElasticsearchClusterRunnerTest.java "ElasticsearchClusterRunnerTest").
+
 ### Install Plugins
 
 This project does not have plugin command to install plugins.
