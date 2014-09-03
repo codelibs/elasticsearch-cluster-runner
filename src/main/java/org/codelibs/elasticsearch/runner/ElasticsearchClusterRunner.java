@@ -366,7 +366,7 @@ public class ElasticsearchClusterRunner {
 
     protected void putIfAbsent(final ImmutableSettings.Builder settingsBuilder,
             final String key, final String value) {
-        if (settingsBuilder.get(key) == null) {
+        if (settingsBuilder.get(key) == null && value != null) {
             settingsBuilder.put(key, value);
         }
     }
