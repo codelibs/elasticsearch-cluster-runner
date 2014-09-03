@@ -4,6 +4,8 @@ import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilde
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.ConnectException;
+import java.net.Socket;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -75,6 +77,10 @@ public class ElasticsearchClusterRunner {
     protected static final String CONFIG_DIR = "config";
 
     protected List<Node> nodeList = new ArrayList<>();
+
+    protected int maxHttpPort = 9299;
+
+    protected int maxTransportPort = 9399;
 
     @Option(name = "-basePath", usage = "Base path for Elasticsearch.")
     protected String basePath;
@@ -294,8 +300,8 @@ public class ElasticsearchClusterRunner {
                 .toAbsolutePath().toString());
 
         final String nodeName = "Node " + number;
-        final int transportPort = baseTransportPort + number;
-        final int httpPort = baseHttpPort + number;
+        final int transportPort = getTransportPort(number);
+        final int httpPort = getHttpPort(number);
         putIfAbsent(settingsBuilder, "cluster.name", clusterName);
         putIfAbsent(settingsBuilder, "node.name", nodeName);
         putIfAbsent(settingsBuilder, "node.master", String.valueOf(true));
@@ -320,11 +326,57 @@ public class ElasticsearchClusterRunner {
         return node;
     }
 
+    private int getHttpPort(final int number) {
+        int httpPort = baseHttpPort + number;
+        if (maxHttpPort < 0) {
+            return httpPort;
+        }
+        while (httpPort <= maxHttpPort) {
+            try (Socket socket = new Socket("localhost", httpPort)) {
+                httpPort++;
+            } catch (ConnectException e) {
+                return httpPort;
+            } catch (IOException e) {
+                print(e.getMessage());
+                httpPort++;
+            }
+        }
+        throw new ClusterRunnerException("The http port " + httpPort
+                + " is unavailable.");
+    }
+
+    protected int getTransportPort(final int number) {
+        int transportPort = baseTransportPort + number;
+        if (maxTransportPort < 0) {
+            return transportPort;
+        }
+        while (transportPort <= maxTransportPort) {
+            try (Socket socket = new Socket("localhost", transportPort)) {
+                transportPort++;
+            } catch (ConnectException e) {
+                return transportPort;
+            } catch (IOException e) {
+                print(e.getMessage());
+                transportPort++;
+            }
+        }
+        throw new ClusterRunnerException("The transport port " + transportPort
+                + " is unavailable.");
+    }
+
     protected void putIfAbsent(final ImmutableSettings.Builder settingsBuilder,
             final String key, final String value) {
         if (settingsBuilder.get(key) == null) {
             settingsBuilder.put(key, value);
         }
+    }
+
+    public void setMaxHttpPort(int maxHttpPort) {
+        this.maxHttpPort = maxHttpPort;
+    }
+
+    public void setMaxTransportPort(int maxTransportPort) {
+        this.maxTransportPort = maxTransportPort;
     }
 
     public Node getNode(final int i) {
