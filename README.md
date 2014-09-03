@@ -16,7 +16,7 @@ Put elasticsearch-cluster-runner as test scope:
 
 and see [ElasticsearchClusterRunnerTest](https://github.com/codelibs/elasticsearch-cluster-runner/blob/master/src/test/java/org/codelibs/elasticsearch/runner/ElasticsearchClusterRunnerTest.java "ElasticsearchClusterRunnerTest").
 
-## Run on Standalone
+## Run as Standalone
 
 ### Install Maven
 
