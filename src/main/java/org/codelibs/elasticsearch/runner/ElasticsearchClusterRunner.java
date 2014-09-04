@@ -25,6 +25,7 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.admin.indices.flush.FlushResponse;
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.admin.indices.optimize.OptimizeResponse;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.delete.DeleteResponse;
@@ -42,6 +43,7 @@ import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.logging.log4j.LogConfigurator;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
@@ -202,7 +204,7 @@ public class ElasticsearchClusterRunner {
         }
     }
 
-    public ElasticsearchClusterRunner onBuild(Builder builder) {
+    public ElasticsearchClusterRunner onBuild(final Builder builder) {
         this.builder = builder;
         return this;
     }
@@ -334,9 +336,9 @@ public class ElasticsearchClusterRunner {
         while (httpPort <= maxHttpPort) {
             try (Socket socket = new Socket("localhost", httpPort)) {
                 httpPort++;
-            } catch (ConnectException e) {
+            } catch (final ConnectException e) {
                 return httpPort;
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 print(e.getMessage());
                 httpPort++;
             }
@@ -353,9 +355,9 @@ public class ElasticsearchClusterRunner {
         while (transportPort <= maxTransportPort) {
             try (Socket socket = new Socket("localhost", transportPort)) {
                 transportPort++;
-            } catch (ConnectException e) {
+            } catch (final ConnectException e) {
                 return transportPort;
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 print(e.getMessage());
                 transportPort++;
             }
@@ -371,11 +373,11 @@ public class ElasticsearchClusterRunner {
         }
     }
 
-    public void setMaxHttpPort(int maxHttpPort) {
+    public void setMaxHttpPort(final int maxHttpPort) {
         this.maxHttpPort = maxHttpPort;
     }
 
-    public void setMaxTransportPort(int maxTransportPort) {
+    public void setMaxTransportPort(final int maxTransportPort) {
         this.maxTransportPort = maxTransportPort;
     }
 
@@ -566,6 +568,19 @@ public class ElasticsearchClusterRunner {
         return actionGet.isExists();
     }
 
+    public PutMappingResponse createMapping(final String index,
+            final String type, final XContentBuilder source) {
+
+        final PutMappingResponse actionGet = client().admin().indices()
+                .preparePutMapping(index).setType(type).setSource(source)
+                .execute().actionGet();
+        if (!actionGet.isAcknowledged()) {
+            onFailure("Failed to create a mapping for " + index + ".",
+                    actionGet);
+        }
+        return actionGet;
+    }
+
     public IndexResponse insert(final String index, final String type,
             final String id, final String source) {
         final IndexResponse actionGet = client().prepareIndex(index, type, id)
@@ -613,6 +628,10 @@ public class ElasticsearchClusterRunner {
             return ((InternalNode) node).injector().getInstance(clazz);
         }
         return null;
+    }
+
+    public String getClusterName() {
+        return clusterName;
     }
 
     private void onFailure(final String message, final ActionResponse response) {

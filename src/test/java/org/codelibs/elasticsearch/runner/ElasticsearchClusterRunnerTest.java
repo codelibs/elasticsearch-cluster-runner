@@ -4,9 +4,17 @@ import junit.framework.TestCase;
 
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.ImmutableSettings.Builder;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
+import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 
 public class ElasticsearchClusterRunnerTest extends TestCase {
@@ -21,9 +29,13 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         runner.onBuild(new ElasticsearchClusterRunner.Builder() {
             @Override
             public void build(final int number, final Builder settingsBuilder) {
-                // settingsBuilder.put("discovery.zen.minimum_master_nodes", "3");
+                // settingsBuilder.put("discovery.zen.minimum_master_nodes",
+                // "3");
             }
         }).build();
+
+        // wait for yellow status
+        runner.ensureYellow();
     }
 
     @Override
@@ -36,6 +48,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
 
     public void test_runCluster() throws Exception {
 
+        // check if runner has nodes
         assertEquals(3, runner.getNodeSize());
         assertNotNull(runner.getNode(0));
         assertNotNull(runner.getNode(1));
@@ -47,9 +60,6 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         assertNotNull(runner.node());
 
         assertNotNull(runner.client());
-
-        // wait for yellow status
-        runner.ensureYellow();
 
         // check if a master node exists
         assertNotNull(runner.masterNode());
@@ -65,6 +75,26 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         // create an index
         runner.createIndex(index, null);
         runner.ensureYellow(index);
+
+        // create a mapping
+        final XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()//
+                .startObject()//
+                .startObject(type)//
+                .startObject("properties")//
+
+                // id
+                .startObject("id")//
+                .field("type", "string")//
+                .field("index", "not_analyzed")//
+                .endObject()//
+                // msg
+                .startObject("msg")//
+                .field("type", "string")//
+                .endObject()//
+                .endObject()//
+                .endObject()//
+                .endObject();
+        runner.createMapping(index, type, mappingBuilder);
 
         if (!runner.indexExists(index)) {
             fail();
@@ -109,6 +139,32 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         // optimize
         runner.optimize(false);
 
+        // transport client
+        final Settings settings = ImmutableSettings.settingsBuilder()
+                .put("cluster.name", runner.getClusterName()).build();
+        final int port = runner.node().settings()
+                .getAsInt("transport.tcp.port", 9300);
+        try (TransportClient client = new TransportClient(settings)) {
+            client.addTransportAddress(new InetSocketTransportAddress(
+                    "localhost", port));
+            final SearchResponse searchResponse = client.prepareSearch(index)
+                    .setTypes(type).setQuery(QueryBuilders.matchAllQuery())
+                    .execute().actionGet();
+            assertEquals(999, searchResponse.getHits().getTotalHits());
+            assertEquals(10, searchResponse.getHits().hits().length);
+        }
+
+        // node client
+        try (Client client = NodeBuilder.nodeBuilder().settings(settings)
+                .client(true).clusterName(runner.getClusterName()).node()
+                .client()) {
+            final SearchResponse searchResponse = client.prepareSearch(index)
+                    .setTypes(type).setQuery(QueryBuilders.matchAllQuery())
+                    .execute().actionGet();
+            assertEquals(999, searchResponse.getHits().getTotalHits());
+            assertEquals(10, searchResponse.getHits().hits().length);
+        }
+
         // close 1 node
         final Node node1 = runner.node();
         node1.close();
@@ -119,5 +175,4 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         assertFalse(runner.getNode(2).isClosed());
 
     }
-
 }
