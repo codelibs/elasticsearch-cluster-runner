@@ -569,8 +569,19 @@ public class ElasticsearchClusterRunner {
     }
 
     public PutMappingResponse createMapping(final String index,
-            final String type, final XContentBuilder source) {
+            final String type, final String mappnigSource) {
+        final PutMappingResponse actionGet = client().admin().indices()
+                .preparePutMapping(index).setType(type)
+                .setSource(mappnigSource).execute().actionGet();
+        if (!actionGet.isAcknowledged()) {
+            onFailure("Failed to create a mapping for " + index + ".",
+                    actionGet);
+        }
+        return actionGet;
+    }
 
+    public PutMappingResponse createMapping(final String index,
+            final String type, final XContentBuilder source) {
         final PutMappingResponse actionGet = client().admin().indices()
                 .preparePutMapping(index).setType(type).setSource(source)
                 .execute().actionGet();
