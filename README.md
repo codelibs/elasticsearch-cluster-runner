@@ -1,7 +1,7 @@
 Elasticsearch Cluster Runner
 ============================
 
-This project runs Elasticsearch cluster on one JVM instance for your development easily.
+This project runs Elasticsearch cluster on one JVM instance for your development/testing easily.
 
 ## Run on JUnit
 
@@ -10,7 +10,7 @@ Put elasticsearch-cluster-runner as test scope:
     <dependency>
         <groupId>org.codelibs</groupId>
         <artifactId>elasticsearch-cluster-runner</artifactId>
-        <version>1.3.2.0</version>
+        <version>1.3.2.1</version>
         <scope>test</scope>
     </dependency>
 
@@ -56,11 +56,10 @@ This project does not have plugin command to install plugins.
 Therefore, you need to put plugins manually.
 For example, installing solr-api plugin:
 
-    mkdir es_home/plugins
-    mkdir es_home/plugins/solr-api
-    wget http://repo1.maven.org/maven2/org/codelibs/elasticsearch-solr-api/1.4.0/elasticsearch-solr-api-1.4.0.zip
-    unzip elasticsearch-solr-api-1.4.0.zip 
-    rm elasticsearch-solr-api-1.4.0.zip 
+    $ mkdir -p es_home/plugins/solr-api
+    $ wget http://repo1.maven.org/maven2/org/codelibs/elasticsearch-solr-api/1.4.0/elasticsearch-solr-api-1.4.0.zip
+    $ unzip elasticsearch-solr-api-1.4.0.zip 
+    $ rm elasticsearch-solr-api-1.4.0.zip 
 
 
 ### Issues/Questions
