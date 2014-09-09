@@ -102,11 +102,11 @@ public class ElasticsearchClusterRunner {
     @Option(name = "-indexStoreType", usage = "Index store type.")
     protected String indexStoreType = "default";
 
-    @Option(name = "-useStdOut", usage = "Print logs to stdout.")
-    protected boolean useStdOut = true;
+    @Option(name = "-useLogger", usage = "Print logs to a logger.")
+    protected boolean useLogger = false;
 
-    @Option(name = "-throwOnFailure", usage = "Throw an exception on a failure.")
-    protected boolean throwOnFailure = true;
+    @Option(name = "-printOnFailure", usage = "Print an exception on a failure.")
+    protected boolean printOnFailure = false;
 
     protected Builder builder;
 
@@ -402,10 +402,10 @@ public class ElasticsearchClusterRunner {
     }
 
     protected void print(final String line) {
-        if (useStdOut) {
-            System.out.println(line);
-        } else {
+        if (useLogger) {
             logger.info(line);
+        } else {
+            System.out.println(line);
         }
     }
 
@@ -646,10 +646,10 @@ public class ElasticsearchClusterRunner {
     }
 
     private void onFailure(final String message, final ActionResponse response) {
-        if (throwOnFailure) {
-            throw new ClusterRunnerException(message, response);
-        } else {
+        if (printOnFailure) {
             print(message);
+        } else {
+            throw new ClusterRunnerException(message, response);
         }
     }
 
