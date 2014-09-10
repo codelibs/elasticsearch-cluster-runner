@@ -1,5 +1,6 @@
 package org.codelibs.elasticsearch.runner;
 
+import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
 import junit.framework.TestCase;
 
 import org.elasticsearch.action.index.IndexResponse;
@@ -32,7 +33,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                 // settingsBuilder.put("discovery.zen.minimum_master_nodes",
                 // "3");
             }
-        }).build();
+        }).build(newConfigs().ramIndexStore());
 
         // wait for yellow status
         runner.ensureYellow();

@@ -136,6 +136,11 @@ public class ElasticsearchClusterRunner {
     public ElasticsearchClusterRunner() {
     }
 
+    /**
+     * Check if a cluster runner is closed.
+     * 
+     * @return true if a runner is closed.
+     */
     public boolean isClosed() {
         for (final Node node : nodeList) {
             if (!node.isClosed()) {
@@ -145,6 +150,9 @@ public class ElasticsearchClusterRunner {
         return true;
     }
 
+    /**
+     * Close a cluster runner.
+     */
     public void close() {
         for (final Node node : nodeList) {
             node.close();
@@ -152,6 +160,9 @@ public class ElasticsearchClusterRunner {
         print("Closed all nodes.");
     }
 
+    /**
+     * Delete all configuration files and directories.
+     */
     public void clean() {
         final Path bPath = FileSystems.getDefault().getPath(basePath);
         try {
@@ -204,11 +215,31 @@ public class ElasticsearchClusterRunner {
         }
     }
 
+    /**
+     * Configure each Elasticsearch instance by builder.
+     * 
+     * @param builder
+     * @return
+     */
     public ElasticsearchClusterRunner onBuild(final Builder builder) {
         this.builder = builder;
         return this;
     }
 
+    /**
+     * Create and start Elasticsearch cluster with Configs instance.
+     * 
+     * @param configs
+     */
+    public void build(final Configs configs) {
+        build(configs.build());
+    }
+
+    /**
+     * Create and start Elasticsearch cluster with arguments.
+     * 
+     * @param args
+     */
     public void build(final String... args) {
         if (args != null) {
             final CmdLineParser parser = new CmdLineParser(this);
@@ -328,7 +359,7 @@ public class ElasticsearchClusterRunner {
         return node;
     }
 
-    private int getHttpPort(final int number) {
+    protected int getHttpPort(final int number) {
         int httpPort = baseHttpPort + number;
         if (maxHttpPort < 0) {
             return httpPort;
@@ -666,4 +697,74 @@ public class ElasticsearchClusterRunner {
          */
         void build(int index, ImmutableSettings.Builder settingsBuilder);
     }
+
+    public static Configs newConfigs() {
+        return new Configs();
+    }
+
+    /**
+     * ElasticsearchClusterRunner configuration.
+     *
+     * @author shinsuke
+     *
+     */
+    public static class Configs {
+        List<String> configList = new ArrayList<>();
+
+        public Configs basePath(final String basePath) {
+            configList.add("-basePath");
+            configList.add(basePath);
+            return this;
+        }
+
+        public Configs numOfNode(final int numOfNode) {
+            configList.add("-numOfNode");
+            configList.add(String.valueOf(numOfNode));
+            return this;
+        }
+
+        public Configs baseTransportPort(final int baseTransportPort) {
+            configList.add("-baseTransportPort");
+            configList.add(String.valueOf(baseTransportPort));
+            return this;
+        }
+
+        public Configs baseHttpPort(final int baseHttpPort) {
+            configList.add("-baseHttpPort");
+            configList.add(String.valueOf(baseHttpPort));
+            return this;
+        }
+
+        public Configs clusterName(final String clusterName) {
+            configList.add("-clusterName");
+            configList.add(clusterName);
+            return this;
+        }
+
+        public Configs indexStoreType(final String indexStoreType) {
+            configList.add("-indexStoreType");
+            configList.add(indexStoreType);
+            return this;
+        }
+
+        public Configs ramIndexStore() {
+            return indexStoreType("ram");
+        }
+
+        public Configs useLogger() {
+            configList.add("-useLogger");
+            return this;
+        }
+
+        public Configs printOnFailure() {
+            configList.add("-printOnFailure");
+            return this;
+        }
+
+        public String[] build() {
+            return configList.toArray(new String[configList.size()]);
+        }
+
+    }
+
 }
