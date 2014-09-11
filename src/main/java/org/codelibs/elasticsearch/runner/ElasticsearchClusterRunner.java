@@ -416,7 +416,16 @@ public class ElasticsearchClusterRunner {
         this.maxTransportPort = maxTransportPort;
     }
 
+    /**
+     * Return a node by the node index.
+     * 
+     * @param i A node index
+     * @return null if the node is not found
+     */
     public Node getNode(final int i) {
+        if (i < 0 || i >= nodeList.size()) {
+            return null;
+        }
         return nodeList.get(i);
     }
 
@@ -439,6 +448,12 @@ public class ElasticsearchClusterRunner {
         return true;
     }
 
+    /**
+     * Return a node by the name.
+     * 
+     * @param name A node name
+     * @return null if the node is not found by the name
+     */
     public Node getNode(final String name) {
         if (name == null) {
             return null;
@@ -451,6 +466,26 @@ public class ElasticsearchClusterRunner {
         return null;
     }
 
+    /**
+     * Return a node index.
+     * 
+     * @param node
+     * @return -1 if the node does not exist.
+     */
+    public int getNodeIndex(final Node node) {
+        for (int i = 0; i < nodeList.size(); i++) {
+            if (nodeList.get(i).equals(node)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Return the number of nodes.
+     * 
+     * @return the number of nodes
+     */
     public int getNodeSize() {
         return nodeList.size();
     }
@@ -474,6 +509,11 @@ public class ElasticsearchClusterRunner {
         }
     }
 
+    /**
+     * Return an available node.
+     * 
+     * @return
+     */
     public Node node() {
         for (final Node node : nodeList) {
             if (!node.isClosed()) {
@@ -483,6 +523,11 @@ public class ElasticsearchClusterRunner {
         throw new ClusterRunnerException("All nodes are closed.");
     }
 
+    /**
+     * Return a master node.
+     * 
+     * @return
+     */
     public synchronized Node masterNode() {
         final ClusterState state = client().admin().cluster().prepareState()
                 .execute().actionGet().getState();
@@ -490,6 +535,11 @@ public class ElasticsearchClusterRunner {
         return getNode(name);
     }
 
+    /**
+     * Return a non-master node.
+     * 
+     * @return
+     */
     public synchronized Node nonMasterNode() {
         final ClusterState state = client().admin().cluster().prepareState()
                 .execute().actionGet().getState();
@@ -502,14 +552,30 @@ public class ElasticsearchClusterRunner {
         return null;
     }
 
+    /**
+     * Return an elasticsearch client.
+     * 
+     * @return
+     */
     public Client client() {
         return node().client();
     }
 
+    /**
+     * Return an elasticsearch admin client.
+     * 
+     * @return
+     */
     public AdminClient admin() {
         return client().admin();
     }
 
+    /**
+     * Wait for green state of a cluster.
+     * 
+     * @param indices
+     * @return
+     */
     public ClusterHealthStatus ensureGreen(final String... indices) {
         final ClusterHealthResponse actionGet = client()
                 .admin()
@@ -528,6 +594,12 @@ public class ElasticsearchClusterRunner {
         return actionGet.getStatus();
     }
 
+    /**
+     * Wait for yellow state of a cluster.
+     * 
+     * @param indices
+     * @return
+     */
     public ClusterHealthStatus ensureYellow(final String... indices) {
         final ClusterHealthResponse actionGet = client()
                 .admin()
