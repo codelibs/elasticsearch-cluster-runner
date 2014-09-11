@@ -80,6 +80,8 @@ public class ElasticsearchClusterRunner {
 
     protected List<Node> nodeList = new ArrayList<>();
 
+    protected List<Settings> settingsList = new ArrayList<>();
+
     protected int maxHttpPort = 9299;
 
     protected int maxTransportPort = 9399;
@@ -138,7 +140,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Check if a cluster runner is closed.
-     * 
+     *
      * @return true if a runner is closed.
      */
     public boolean isClosed() {
@@ -217,7 +219,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Configure each Elasticsearch instance by builder.
-     * 
+     *
      * @param builder
      * @return
      */
@@ -228,7 +230,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Create and start Elasticsearch cluster with Configs instance.
-     * 
+     *
      * @param configs
      */
     public void build(final Configs configs) {
@@ -237,7 +239,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Create and start Elasticsearch cluster with arguments.
-     * 
+     *
      * @param args
      */
     public void build(final String... args) {
@@ -300,11 +302,15 @@ public class ElasticsearchClusterRunner {
         print("----------------------------------------");
 
         for (int i = 0; i < numOfNode; i++) {
-            nodeList.add(buildNode(i + 1));
+            final Settings settings = buildNodeSettings(i + 1);
+            final Node node = new InternalNode(settings, true);
+            node.start();
+            nodeList.add(node);
+            settingsList.add(settings);
         }
     }
 
-    protected Node buildNode(final int number) {
+    protected Settings buildNodeSettings(final int number) {
         final Path confPath = Paths.get(basePath, CONFIG_DIR);
         final Path pluginsPath = Paths.get(basePath, PLUGINS_DIR);
         final Path logsPath = Paths.get(basePath, LOGS_DIR, "node_" + number);
@@ -354,9 +360,7 @@ public class ElasticsearchClusterRunner {
 
         final Settings settings = settingsBuilder.build();
         LogConfigurator.configure(settings);
-        final Node node = new InternalNode(settings, true);
-        node.start();
-        return node;
+        return settings;
     }
 
     protected int getHttpPort(final int number) {
@@ -414,6 +418,25 @@ public class ElasticsearchClusterRunner {
 
     public Node getNode(final int i) {
         return nodeList.get(i);
+    }
+
+    /**
+     * Start a closed node.
+     * 
+     * @param i 
+     * @return true if the node is started.
+     */
+    public boolean startNode(final int i) {
+        if (i >= nodeList.size()) {
+            return false;
+        }
+        if (!nodeList.get(i).isClosed()) {
+            return false;
+        }
+        final Node node = new InternalNode(settingsList.get(i), true);
+        node.start();
+        nodeList.set(i, node);
+        return true;
     }
 
     public Node getNode(final String name) {

@@ -175,5 +175,11 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         assertFalse(runner.getNode(1).isClosed());
         assertFalse(runner.getNode(2).isClosed());
 
+        // restart a node
+        assertTrue(runner.startNode(0));
+        assertFalse(runner.startNode(1));
+        assertFalse(runner.startNode(2));
+
+        runner.ensureGreen();
     }
 }
