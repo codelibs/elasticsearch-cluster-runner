@@ -3,6 +3,43 @@ Elasticsearch Cluster Runner
 
 This project runs Elasticsearch cluster on one JVM instance for your development/testing easily.
 
+## Run on Your Application
+
+Put elasticsearch-cluster-runner if using Maven:
+
+    <dependency>
+        <groupId>org.codelibs</groupId>
+        <artifactId>elasticsearch-cluster-runner</artifactId>
+        <version>1.3.2.2</version>
+    </dependency>
+
+### Start Cluster Runner
+
+    import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
+    ...
+    // create runner instance
+    ElasticsearchClusterRunner runner = new ElasticsearchClusterRunner();
+    // create ES nodes
+    runner.onBuild(new ElasticsearchClusterRunner.Builder() {
+        @Override
+        public void build(final int number, final Builder settingsBuilder) {
+            // put elasticsearch settings
+            // settingsBuilder.put("discovery.zen.minimum_master_nodes", "3");
+        }
+    }).build(newConfigs().ramIndexStore());
+
+build(Configs) method configures/starts Clsuter Runner.
+
+### Stop Cluster Runner
+
+    // close runner
+    runner.close();
+
+### Clean up 
+
+    // delete all files(config and index)
+    runner.clean();
+
 ## Run on JUnit
 
 Put elasticsearch-cluster-runner as test scope:
@@ -10,7 +47,7 @@ Put elasticsearch-cluster-runner as test scope:
     <dependency>
         <groupId>org.codelibs</groupId>
         <artifactId>elasticsearch-cluster-runner</artifactId>
-        <version>1.3.2.1</version>
+        <version>1.3.2.2</version>
         <scope>test</scope>
     </dependency>
 
