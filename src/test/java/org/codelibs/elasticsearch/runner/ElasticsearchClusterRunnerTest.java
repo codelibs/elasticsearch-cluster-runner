@@ -1,9 +1,13 @@
 package org.codelibs.elasticsearch.runner;
 
 import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
+
+import java.util.Map;
+
 import junit.framework.TestCase;
 
 import org.codelibs.elasticsearch.runner.net.Curl;
+import org.codelibs.elasticsearch.runner.net.CurlResponse;
 import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -147,10 +151,6 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         // optimize
         runner.optimize(false);
 
-        String content = Curl.get(runner.masterNode(), "/_search")
-                .param("q", "*:*").execute().getContentAsString();
-        assertNotNull(content);
-
         // transport client
         final Settings settings = ImmutableSettings.settingsBuilder()
                 .put("cluster.name", runner.getClusterName()).build();
@@ -175,6 +175,46 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                     .execute().actionGet();
             assertEquals(999, searchResponse.getHits().getTotalHits());
             assertEquals(10, searchResponse.getHits().hits().length);
+        }
+
+        Node node = runner.node();
+
+        // http access
+        // get
+        try (CurlResponse curlResponse = Curl.get(node, "/_search")
+                .param("q", "*:*").execute()) {
+            String content = curlResponse.getContentAsString();
+            assertNotNull(content);
+            assertTrue(content.contains("total"));
+            Map<String, Object> map = curlResponse.getContentAsMap();
+            assertNotNull(map);
+            assertEquals("false", map.get("timed_out").toString());
+        }
+
+        // post
+        try (CurlResponse curlResponse = Curl
+                .post(node, "/" + index + "/" + type)
+                .body("{\"id\":\"2000\",\"msg\":\"test 2000\"}").execute()) {
+            Map<String, Object> map = curlResponse.getContentAsMap();
+            assertNotNull(map);
+            assertEquals("true", map.get("created").toString());
+        }
+
+        // put
+        try (CurlResponse curlResponse = Curl
+                .put(node, "/" + index + "/" + type + "/2001")
+                .body("{\"id\":\"2001\",\"msg\":\"test 2001\"}").execute()) {
+            Map<String, Object> map = curlResponse.getContentAsMap();
+            assertNotNull(map);
+            assertEquals("true", map.get("created").toString());
+        }
+
+        // delete
+        try (CurlResponse curlResponse = Curl.delete(node,
+                "/" + index + "/" + type + "/2001").execute()) {
+            Map<String, Object> map = curlResponse.getContentAsMap();
+            assertNotNull(map);
+            assertEquals("true", map.get("found").toString());
         }
 
         // close 1 node

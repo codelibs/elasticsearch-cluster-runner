@@ -8,6 +8,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Map;
+
+import org.elasticsearch.common.xcontent.json.JsonXContent;
 
 public class CurlResponse implements Closeable {
 
@@ -23,6 +26,14 @@ public class CurlResponse implements Closeable {
     public void close() throws IOException {
         if (tempFile != null) {
             Files.delete(tempFile);
+        }
+    }
+
+    public Map<String, Object> getContentAsMap() {
+        try (InputStream is = getContentAsStream()) {
+            return JsonXContent.jsonXContent.createParser(is).map();
+        } catch (Exception e) {
+            throw new CurlException("Failed to access the content.", e);
         }
     }
 
@@ -45,7 +56,7 @@ public class CurlResponse implements Closeable {
     }
 
     public InputStream getContentAsStream() throws IOException {
-        if(tempFile==null){
+        if (tempFile == null) {
             throw new CurlException("The content does not exist.");
         }
         return Files.newInputStream(tempFile, StandardOpenOption.READ);
