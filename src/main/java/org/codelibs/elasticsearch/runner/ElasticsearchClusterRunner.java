@@ -28,6 +28,7 @@ import org.elasticsearch.action.admin.indices.flush.FlushResponse;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.admin.indices.optimize.OptimizeResponse;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
+import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -747,6 +748,12 @@ public class ElasticsearchClusterRunner {
             onFailure("Failed to delete " + id + " from " + index + "/" + type
                     + ".", actionGet);
         }
+        return actionGet;
+    }
+
+    public CountResponse count(final String index, final String type) {
+        final CountResponse actionGet = client().prepareCount(index)
+                .setTypes(type).execute().actionGet();
         return actionGet;
     }
 

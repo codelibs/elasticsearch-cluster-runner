@@ -3,6 +3,7 @@ package org.codelibs.elasticsearch.runner;
 import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
 import junit.framework.TestCase;
 
+import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -124,6 +125,11 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                     SortBuilders.fieldSort("id"), 0, 10);
             assertEquals(1000, searchResponse.getHits().getTotalHits());
             assertEquals(10, searchResponse.getHits().hits().length);
+        }
+
+        {
+            final CountResponse countResponse = runner.count(index, type);
+            assertEquals(1000, countResponse.getCount());
         }
 
         // delete 1 document
