@@ -167,54 +167,63 @@ public class ElasticsearchClusterRunner {
      */
     public void clean() {
         final Path bPath = FileSystems.getDefault().getPath(basePath);
-        try {
-            Files.walkFileTree(bPath, new FileVisitor<Path>() {
-                @Override
-                public FileVisitResult preVisitDirectory(final Path dir,
-                        final BasicFileAttributes attrs) throws IOException {
-                    return FileVisitResult.CONTINUE;
-                }
+        for (int i = 0; i < 10; i++) {
+            try {
+                Files.walkFileTree(bPath, new FileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult preVisitDirectory(final Path dir,
+                            final BasicFileAttributes attrs) throws IOException {
+                        return FileVisitResult.CONTINUE;
+                    }
 
-                @Override
-                public FileVisitResult visitFile(final Path file,
-                        final BasicFileAttributes attrs) throws IOException {
-                    Files.delete(file);
-                    return checkIfExist(file);
-                }
+                    @Override
+                    public FileVisitResult visitFile(final Path file,
+                            final BasicFileAttributes attrs) throws IOException {
+                        Files.delete(file);
+                        return checkIfExist(file);
+                    }
 
-                @Override
-                public FileVisitResult visitFileFailed(final Path file,
-                        final IOException exc) throws IOException {
-                    throw exc;
-                }
-
-                @Override
-                public FileVisitResult postVisitDirectory(final Path dir,
-                        final IOException exc) throws IOException {
-                    if (exc == null) {
-                        Files.delete(dir);
-                        if (!Files.exists(dir)) {
-                            return FileVisitResult.CONTINUE;
-                        } else {
-                            throw new IOException();
-                        }
-                    } else {
+                    @Override
+                    public FileVisitResult visitFileFailed(final Path file,
+                            final IOException exc) throws IOException {
                         throw exc;
                     }
-                }
 
-                private FileVisitResult checkIfExist(final Path path)
-                        throws IOException {
-                    if (Files.exists(path)) {
-                        throw new IOException("Failed to delete " + path);
+                    @Override
+                    public FileVisitResult postVisitDirectory(final Path dir,
+                            final IOException exc) throws IOException {
+                        if (exc == null) {
+                            Files.delete(dir);
+                            if (!Files.exists(dir)) {
+                                return FileVisitResult.CONTINUE;
+                            } else {
+                                throw new IOException("Failed to delete " + dir);
+                            }
+                        } else {
+                            throw exc;
+                        }
                     }
-                    return FileVisitResult.CONTINUE;
+
+                    private FileVisitResult checkIfExist(final Path path)
+                            throws IOException {
+                        if (Files.exists(path)) {
+                            throw new IOException("Failed to delete " + path);
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+                print("Deleted " + basePath);
+                return;
+            } catch (final Exception e) {
+                print(e.getMessage() + " Retring to delete it.");
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ignore) {
+                    // ignore
                 }
-            });
-            print("Deleted " + basePath);
-        } catch (final IOException e) {
-            print("Failed to delete " + basePath);
+            }
         }
+        print("Failed to delete " + basePath);
     }
 
     /**
