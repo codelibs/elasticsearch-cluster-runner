@@ -3,6 +3,7 @@ package org.codelibs.elasticsearch.runner;
 import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
 import junit.framework.TestCase;
 
+import org.codelibs.elasticsearch.runner.net.Curl;
 import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -145,6 +146,10 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
 
         // optimize
         runner.optimize(false);
+
+        String content = Curl.get(runner.masterNode(), "/_search")
+                .param("q", "*:*").execute().getContentAsString();
+        assertNotNull(content);
 
         // transport client
         final Settings settings = ImmutableSettings.settingsBuilder()

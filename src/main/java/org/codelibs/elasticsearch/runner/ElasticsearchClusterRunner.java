@@ -219,7 +219,7 @@ public class ElasticsearchClusterRunner {
                 print(e.getMessage() + " Retring to delete it.");
                 try {
                     Thread.sleep(1000);
-                } catch (InterruptedException ignore) {
+                } catch (final InterruptedException ignore) {
                     // ignore
                 }
             }
@@ -349,8 +349,8 @@ public class ElasticsearchClusterRunner {
                 .toAbsolutePath().toString());
 
         final String nodeName = "Node " + number;
-        final int transportPort = getTransportPort(number);
-        final int httpPort = getHttpPort(number);
+        final int transportPort = getAvailableTransportPort(number);
+        final int httpPort = getAvailableHttpPort(number);
         putIfAbsent(settingsBuilder, "cluster.name", clusterName);
         putIfAbsent(settingsBuilder, "node.name", nodeName);
         putIfAbsent(settingsBuilder, "node.master", String.valueOf(true));
@@ -373,7 +373,7 @@ public class ElasticsearchClusterRunner {
         return settings;
     }
 
-    protected int getHttpPort(final int number) {
+    protected int getAvailableHttpPort(final int number) {
         int httpPort = baseHttpPort + number;
         if (maxHttpPort < 0) {
             return httpPort;
@@ -392,7 +392,7 @@ public class ElasticsearchClusterRunner {
                 + " is unavailable.");
     }
 
-    protected int getTransportPort(final int number) {
+    protected int getAvailableTransportPort(final int number) {
         int transportPort = baseTransportPort + number;
         if (maxTransportPort < 0) {
             return transportPort;
@@ -428,7 +428,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Return a node by the node index.
-     * 
+     *
      * @param i A node index
      * @return null if the node is not found
      */
@@ -441,8 +441,8 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Start a closed node.
-     * 
-     * @param i 
+     *
+     * @param i
      * @return true if the node is started.
      */
     public boolean startNode(final int i) {
@@ -460,7 +460,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Return a node by the name.
-     * 
+     *
      * @param name A node name
      * @return null if the node is not found by the name
      */
@@ -478,7 +478,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Return a node index.
-     * 
+     *
      * @param node
      * @return -1 if the node does not exist.
      */
@@ -493,7 +493,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Return the number of nodes.
-     * 
+     *
      * @return the number of nodes
      */
     public int getNodeSize() {
@@ -521,7 +521,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Return an available node.
-     * 
+     *
      * @return
      */
     public Node node() {
@@ -535,7 +535,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Return a master node.
-     * 
+     *
      * @return
      */
     public synchronized Node masterNode() {
@@ -547,7 +547,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Return a non-master node.
-     * 
+     *
      * @return
      */
     public synchronized Node nonMasterNode() {
@@ -564,7 +564,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Return an elasticsearch client.
-     * 
+     *
      * @return
      */
     public Client client() {
@@ -573,7 +573,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Return an elasticsearch admin client.
-     * 
+     *
      * @return
      */
     public AdminClient admin() {
@@ -582,7 +582,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Wait for green state of a cluster.
-     * 
+     *
      * @param indices
      * @return
      */
@@ -606,7 +606,7 @@ public class ElasticsearchClusterRunner {
 
     /**
      * Wait for yellow state of a cluster.
-     * 
+     *
      * @param indices
      * @return
      */
