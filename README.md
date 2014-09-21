@@ -10,7 +10,7 @@ Put elasticsearch-cluster-runner if using Maven:
     <dependency>
         <groupId>org.codelibs</groupId>
         <artifactId>elasticsearch-cluster-runner</artifactId>
-        <version>1.3.2.2</version>
+        <version>1.3.2.3</version>
     </dependency>
 
 ### Start Cluster Runner
@@ -47,7 +47,7 @@ Put elasticsearch-cluster-runner as test scope:
     <dependency>
         <groupId>org.codelibs</groupId>
         <artifactId>elasticsearch-cluster-runner</artifactId>
-        <version>1.3.2.2</version>
+        <version>1.3.2.3</version>
         <scope>test</scope>
     </dependency>
 
