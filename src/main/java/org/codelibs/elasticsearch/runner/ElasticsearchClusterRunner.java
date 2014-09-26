@@ -23,6 +23,7 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.admin.indices.flush.FlushResponse;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
@@ -702,6 +703,15 @@ public class ElasticsearchClusterRunner {
         final IndicesExistsResponse actionGet = client().admin().indices()
                 .prepareExists(index).execute().actionGet();
         return actionGet.isExists();
+    }
+
+    public DeleteIndexResponse deleteIndex(String index) {
+        DeleteIndexResponse actionGet = client().admin().indices()
+                .prepareDelete(index).execute().actionGet();
+        if (!actionGet.isAcknowledged()) {
+            onFailure("Failed to create " + index + ".", actionGet);
+        }
+        return actionGet;
     }
 
     public PutMappingResponse createMapping(final String index,
