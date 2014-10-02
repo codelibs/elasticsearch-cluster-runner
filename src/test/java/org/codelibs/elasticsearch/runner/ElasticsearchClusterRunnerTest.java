@@ -39,7 +39,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                 // settingsBuilder.put("discovery.zen.minimum_master_nodes",
                 // "3");
             }
-        }).build(newConfigs().ramIndexStore());
+        }).build(newConfigs().ramIndexStore().numOfNode(3));
 
         // wait for yellow status
         runner.ensureYellow();
@@ -94,10 +94,22 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                 .field("type", "string")//
                 .field("index", "not_analyzed")//
                 .endObject()//
+
                 // msg
                 .startObject("msg")//
                 .field("type", "string")//
                 .endObject()//
+
+                // order
+                .startObject("order")//
+                .field("type", "long")//
+                .endObject()//
+
+                // @timestamp
+                .startObject("@timestamp")//
+                .field("type", "date")//
+                .endObject()//
+
                 .endObject()//
                 .endObject()//
                 .endObject();
@@ -111,7 +123,8 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         for (int i = 1; i <= 1000; i++) {
             final IndexResponse indexResponse1 = runner.insert(index, type,
                     String.valueOf(i), "{\"id\":\"" + i + "\",\"msg\":\"test "
-                            + i + "\"}");
+                            + i + "\",\"order\":" + i
+                            + ",\"@timestamp\":\"2000-01-01T00:00:00\"}");
             assertTrue(indexResponse1.isCreated());
         }
         runner.refresh();
