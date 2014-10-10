@@ -169,53 +169,18 @@ public class ElasticsearchClusterRunner {
      */
     public void clean() {
         final Path bPath = FileSystems.getDefault().getPath(basePath);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 3; i++) {
             try {
-                Files.walkFileTree(bPath, new FileVisitor<Path>() {
-                    @Override
-                    public FileVisitResult preVisitDirectory(final Path dir,
-                            final BasicFileAttributes attrs) throws IOException {
-                        return FileVisitResult.CONTINUE;
+                CleanUpFileVisitor visitor = new CleanUpFileVisitor();
+                Files.walkFileTree(bPath, visitor);
+                if (!visitor.hasErrors()) {
+                    print("Deleted " + basePath);
+                    return;
+                } else if (logger.isDebugEnabled()) {
+                    for (Throwable t : visitor.getErrors()) {
+                        logger.debug("Could not delete files/directories.", t);
                     }
-
-                    @Override
-                    public FileVisitResult visitFile(final Path file,
-                            final BasicFileAttributes attrs) throws IOException {
-                        Files.delete(file);
-                        return checkIfExist(file);
-                    }
-
-                    @Override
-                    public FileVisitResult visitFileFailed(final Path file,
-                            final IOException exc) throws IOException {
-                        throw exc;
-                    }
-
-                    @Override
-                    public FileVisitResult postVisitDirectory(final Path dir,
-                            final IOException exc) throws IOException {
-                        if (exc == null) {
-                            Files.delete(dir);
-                            if (!Files.exists(dir)) {
-                                return FileVisitResult.CONTINUE;
-                            } else {
-                                throw new IOException("Failed to delete " + dir);
-                            }
-                        } else {
-                            throw exc;
-                        }
-                    }
-
-                    private FileVisitResult checkIfExist(final Path path)
-                            throws IOException {
-                        if (Files.exists(path)) {
-                            throw new IOException("Failed to delete " + path);
-                        }
-                        return FileVisitResult.CONTINUE;
-                    }
-                });
-                print("Deleted " + basePath);
-                return;
+                }
             } catch (final Exception e) {
                 print(e.getMessage() + " Retring to delete it.");
                 try {
@@ -225,7 +190,7 @@ public class ElasticsearchClusterRunner {
                 }
             }
         }
-        print("Failed to delete " + basePath);
+        print("Failed to delete " + basePath + " in this process.");
     }
 
     /**
@@ -802,6 +767,61 @@ public class ElasticsearchClusterRunner {
             print(message);
         } else {
             throw new ClusterRunnerException(message, response);
+        }
+    }
+
+    private final static class CleanUpFileVisitor implements FileVisitor<Path> {
+        private List<Throwable> errorList = new ArrayList<>();
+
+        @Override
+        public FileVisitResult preVisitDirectory(final Path dir,
+                final BasicFileAttributes attrs) throws IOException {
+            return FileVisitResult.CONTINUE;
+        }
+
+        public boolean hasErrors() {
+            return !errorList.isEmpty();
+        }
+
+        public List<Throwable> getErrors() {
+            return errorList;
+        }
+
+        @Override
+        public FileVisitResult visitFile(final Path file,
+                final BasicFileAttributes attrs) throws IOException {
+            Files.delete(file);
+            return checkIfExist(file);
+        }
+
+        @Override
+        public FileVisitResult visitFileFailed(final Path file,
+                final IOException exc) throws IOException {
+            throw exc;
+        }
+
+        @Override
+        public FileVisitResult postVisitDirectory(final Path dir,
+                final IOException exc) throws IOException {
+            if (exc == null) {
+                Files.delete(dir);
+                if (Files.exists(dir)) {
+                    errorList.add(new IOException("Failed to delete " + dir));
+                    dir.toFile().deleteOnExit();
+                }
+                return FileVisitResult.CONTINUE;
+            } else {
+                throw exc;
+            }
+        }
+
+        private FileVisitResult checkIfExist(final Path path)
+                throws IOException {
+            if (Files.exists(path)) {
+                errorList.add(new IOException("Failed to delete " + path));
+                path.toFile().deleteOnExit();
+            }
+            return FileVisitResult.CONTINUE;
         }
     }
 
