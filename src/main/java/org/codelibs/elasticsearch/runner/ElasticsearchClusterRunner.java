@@ -64,7 +64,7 @@ import org.kohsuke.args4j.Option;
  */
 public class ElasticsearchClusterRunner {
     private static final ESLogger logger = Loggers
-            .getLogger(ElasticsearchClusterRunner.class);
+            .getLogger("codelibs.cluster.runner");
 
     protected static final String LOGGING_YAML = "logging.yml";
 
@@ -466,7 +466,7 @@ public class ElasticsearchClusterRunner {
         return nodeList.size();
     }
 
-    protected void print(final String line) {
+    public void print(final String line) {
         if (useLogger) {
             logger.info(line);
         } else {
