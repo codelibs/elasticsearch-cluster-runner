@@ -57,7 +57,12 @@ public class CurlResponse implements Closeable {
 
     public InputStream getContentAsStream() throws IOException {
         if (tempFile == null) {
-            throw new CurlException("The content does not exist.");
+            if (contentException != null) {
+                throw new CurlException("The content does not exist.",
+                        contentException);
+            } else {
+                throw new CurlException("The content does not exist.");
+            }
         }
         return Files.newInputStream(tempFile, StandardOpenOption.READ);
     }
