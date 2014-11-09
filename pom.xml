@@ -25,8 +25,8 @@
 	</parent>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<elasticsearch.version>1.4.0.Beta1</elasticsearch.version>
-		<lucene.version>4.10.1</lucene.version>
+		<elasticsearch.version>1.4.0</elasticsearch.version>
+		<lucene.version>4.10.2</lucene.version>
 	</properties>
 	<build>
 		<plugins>
