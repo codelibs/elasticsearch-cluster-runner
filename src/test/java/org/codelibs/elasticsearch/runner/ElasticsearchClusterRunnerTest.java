@@ -14,6 +14,7 @@ import org.codelibs.elasticsearch.runner.net.Curl;
 import org.codelibs.elasticsearch.runner.net.CurlException;
 import org.codelibs.elasticsearch.runner.net.CurlRequest;
 import org.codelibs.elasticsearch.runner.net.CurlResponse;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
 import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -135,6 +136,29 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         }
         runner.refresh();
 
+        // update alias
+        final String alias = index + "_alias";
+        {
+            final GetAliasesResponse aliasesResponse = runner.getAlias(alias);
+            assertNull(aliasesResponse.getAliases().get(alias));
+        }
+
+        {
+            runner.updateAlias(alias, new String[] { index }, null);
+            runner.flush();
+            final GetAliasesResponse aliasesResponse = runner.getAlias(alias);
+            assertEquals(1, aliasesResponse.getAliases().size());
+            assertEquals(1, aliasesResponse.getAliases().get(index).size());
+            assertEquals(alias, aliasesResponse.getAliases().get(index).get(0)
+                    .alias());
+        }
+
+        {
+            runner.updateAlias(alias, null, new String[] { index });
+            final GetAliasesResponse aliasesResponse = runner.getAlias(alias);
+            assertNull(aliasesResponse.getAliases().get(alias));
+        }
+
         // search 1000 documents
         {
             final SearchResponse searchResponse = runner.search(index, type,
@@ -196,16 +220,16 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
             assertEquals(10, searchResponse.getHits().hits().length);
         }
 
-        Node node = runner.node();
+        final Node node = runner.node();
 
         // http access
         // get
         try (CurlResponse curlResponse = Curl.get(node, "/_search")
                 .param("q", "*:*").execute()) {
-            String content = curlResponse.getContentAsString();
+            final String content = curlResponse.getContentAsString();
             assertNotNull(content);
             assertTrue(content.contains("total"));
-            Map<String, Object> map = curlResponse.getContentAsMap();
+            final Map<String, Object> map = curlResponse.getContentAsMap();
             assertNotNull(map);
             assertEquals("false", map.get("timed_out").toString());
         }
@@ -214,7 +238,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         try (CurlResponse curlResponse = Curl
                 .post(node, "/" + index + "/" + type)
                 .body("{\"id\":\"2000\",\"msg\":\"test 2000\"}").execute()) {
-            Map<String, Object> map = curlResponse.getContentAsMap();
+            final Map<String, Object> map = curlResponse.getContentAsMap();
             assertNotNull(map);
             assertEquals("true", map.get("created").toString());
         }
@@ -223,7 +247,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         try (CurlResponse curlResponse = Curl
                 .put(node, "/" + index + "/" + type + "/2001")
                 .body("{\"id\":\"2001\",\"msg\":\"test 2001\"}").execute()) {
-            Map<String, Object> map = curlResponse.getContentAsMap();
+            final Map<String, Object> map = curlResponse.getContentAsMap();
             assertNotNull(map);
             assertEquals("true", map.get("created").toString());
         }
@@ -231,7 +255,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         // delete
         try (CurlResponse curlResponse = Curl.delete(node,
                 "/" + index + "/" + type + "/2001").execute()) {
-            Map<String, Object> map = curlResponse.getContentAsMap();
+            final Map<String, Object> map = curlResponse.getContentAsMap();
             assertNotNull(map);
             assertEquals("true", map.get("found").toString());
         }
@@ -254,7 +278,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                         }
                     }
                 }).execute()) {
-            Map<String, Object> map = curlResponse.getContentAsMap();
+            final Map<String, Object> map = curlResponse.getContentAsMap();
             assertNotNull(map);
             assertEquals("true", map.get("created").toString());
         }

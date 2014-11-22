@@ -22,6 +22,9 @@ import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequestBuilder;
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesResponse;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
@@ -613,9 +616,14 @@ public class ElasticsearchClusterRunner {
     }
 
     public FlushResponse flush() {
+        return flush(true);
+    }
+
+    public FlushResponse flush(final boolean force) {
         waitForRelocation();
         final FlushResponse actionGet = client().admin().indices()
-                .prepareFlush().execute().actionGet();
+                .prepareFlush().setWaitIfOngoing(true).setForce(force)
+                .setFull(true).execute().actionGet();
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
@@ -625,9 +633,13 @@ public class ElasticsearchClusterRunner {
     }
 
     public RefreshResponse refresh() {
+        return refresh(true);
+    }
+
+    public RefreshResponse refresh(final boolean force) {
         waitForRelocation();
         final RefreshResponse actionGet = client().admin().indices()
-                .prepareRefresh().execute().actionGet();
+                .prepareRefresh().setForce(force).execute().actionGet();
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
@@ -743,6 +755,29 @@ public class ElasticsearchClusterRunner {
                                 .matchAllQuery())
                 .addSort(sort != null ? sort : SortBuilders.scoreSort())
                 .setFrom(from).setSize(size).execute().actionGet();
+        return actionGet;
+    }
+
+    public GetAliasesResponse getAlias(final String alias) {
+        final GetAliasesResponse actionGet = client().admin().indices()
+                .prepareGetAliases(alias).execute().actionGet();
+        return actionGet;
+    }
+
+    public IndicesAliasesResponse updateAlias(final String alias,
+            final String[] addedIndices, final String[] deletedIndices) {
+        final IndicesAliasesRequestBuilder builder = client().admin().indices()
+                .prepareAliases();
+        if (addedIndices != null && addedIndices.length > 0) {
+            builder.addAlias(addedIndices, alias);
+        }
+        if (deletedIndices != null && deletedIndices.length > 0) {
+            builder.removeAlias(deletedIndices, alias);
+        }
+        final IndicesAliasesResponse actionGet = builder.execute().actionGet();
+        if (!actionGet.isAcknowledged()) {
+            onFailure("Failed to update " + alias + ".", actionGet);
+        }
         return actionGet;
     }
 
