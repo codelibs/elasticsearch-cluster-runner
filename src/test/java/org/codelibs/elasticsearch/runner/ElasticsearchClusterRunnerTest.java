@@ -2,11 +2,17 @@ package org.codelibs.elasticsearch.runner;
 
 import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
 import java.util.Map;
 
 import junit.framework.TestCase;
 
 import org.codelibs.elasticsearch.runner.net.Curl;
+import org.codelibs.elasticsearch.runner.net.CurlException;
+import org.codelibs.elasticsearch.runner.net.CurlRequest;
 import org.codelibs.elasticsearch.runner.net.CurlResponse;
 import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.index.IndexResponse;
@@ -228,6 +234,29 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
             Map<String, Object> map = curlResponse.getContentAsMap();
             assertNotNull(map);
             assertEquals("true", map.get("found").toString());
+        }
+
+        // post
+        try (CurlResponse curlResponse = Curl
+                .post(node, "/" + index + "/" + type)
+                .onConnect(new CurlRequest.ConnectionBuilder() {
+                    @Override
+                    public void onConnect(CurlRequest curlRequest,
+                            HttpURLConnection connection) {
+                        connection.setDoOutput(true);
+                        try (BufferedWriter writer = new BufferedWriter(
+                                new OutputStreamWriter(connection
+                                        .getOutputStream(), "UTF-8"))) {
+                            writer.write("{\"id\":\"2002\",\"msg\":\"test 2002\"}");
+                            writer.flush();
+                        } catch (IOException e) {
+                            throw new CurlException("Failed to write data.", e);
+                        }
+                    }
+                }).execute()) {
+            Map<String, Object> map = curlResponse.getContentAsMap();
+            assertNotNull(map);
+            assertEquals("true", map.get("created").toString());
         }
 
         // close 1 node

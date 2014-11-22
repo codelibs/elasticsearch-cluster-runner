@@ -10,19 +10,19 @@ public class Curl {
         // nothing
     }
 
-    public static CurlRequest get(Node node, String path) {
+    public static CurlRequest get(final Node node, final String path) {
         return new CurlRequest(Method.GET, node, path);
     }
 
-    public static CurlRequest post(Node node, String path) {
+    public static CurlRequest post(final Node node, final String path) {
         return new CurlRequest(Method.POST, node, path);
     }
 
-    public static CurlRequest put(Node node, String path) {
+    public static CurlRequest put(final Node node, final String path) {
         return new CurlRequest(Method.PUT, node, path);
     }
 
-    public static CurlRequest delete(Node node, String path) {
+    public static CurlRequest delete(final Node node, final String path) {
         return new CurlRequest(Method.DELETE, node, path);
     }
 

@@ -171,13 +171,13 @@ public class ElasticsearchClusterRunner {
         final Path bPath = FileSystems.getDefault().getPath(basePath);
         for (int i = 0; i < 3; i++) {
             try {
-                CleanUpFileVisitor visitor = new CleanUpFileVisitor();
+                final CleanUpFileVisitor visitor = new CleanUpFileVisitor();
                 Files.walkFileTree(bPath, visitor);
                 if (!visitor.hasErrors()) {
                     print("Deleted " + basePath);
                     return;
                 } else if (logger.isDebugEnabled()) {
-                    for (Throwable t : visitor.getErrors()) {
+                    for (final Throwable t : visitor.getErrors()) {
                         logger.debug("Could not delete files/directories.", t);
                     }
                 }
@@ -670,8 +670,8 @@ public class ElasticsearchClusterRunner {
         return actionGet.isExists();
     }
 
-    public DeleteIndexResponse deleteIndex(String index) {
-        DeleteIndexResponse actionGet = client().admin().indices()
+    public DeleteIndexResponse deleteIndex(final String index) {
+        final DeleteIndexResponse actionGet = client().admin().indices()
                 .prepareDelete(index).execute().actionGet();
         if (!actionGet.isAcknowledged()) {
             onFailure("Failed to create " + index + ".", actionGet);

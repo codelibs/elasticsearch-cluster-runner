@@ -32,7 +32,7 @@ public class CurlResponse implements Closeable {
     public Map<String, Object> getContentAsMap() {
         try (InputStream is = getContentAsStream()) {
             return JsonXContent.jsonXContent.createParser(is).map();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new CurlException("Failed to access the content.", e);
         }
     }
@@ -87,8 +87,8 @@ public class CurlResponse implements Closeable {
         this.encoding = encoding;
     }
 
-    public void setContentException(Exception e) {
-        this.contentException = e;
+    public void setContentException(final Exception e) {
+        contentException = e;
     }
 
     public Exception getContentException() {

@@ -29,14 +29,16 @@ public class CurlRequest {
 
     protected String body;
 
+    private ConnectionBuilder connectionBuilder;
+
     public CurlRequest(final Method method, final String url) {
         this.method = method;
         this.url = url;
     }
 
-    public CurlRequest(Method method, Node node, String path) {
+    public CurlRequest(final Method method, final Node node, final String path) {
         this.method = method;
-        StringBuilder urlBuf = new StringBuilder(200);
+        final StringBuilder urlBuf = new StringBuilder(200);
         urlBuf.append("http://localhost:").append(
                 node.settings().get("http.port"));
         if (path.startsWith("/")) {
@@ -44,7 +46,19 @@ public class CurlRequest {
         } else {
             urlBuf.append('/').append(path);
         }
-        this.url = urlBuf.toString();
+        url = urlBuf.toString();
+    }
+
+    public String encoding() {
+        return encoding;
+    }
+
+    public Method method() {
+        return method;
+    }
+
+    public String body() {
+        return body;
     }
 
     public CurlRequest encoding(final String encoding) {
@@ -58,6 +72,11 @@ public class CurlRequest {
 
     public CurlRequest body(final String body) {
         this.body = body;
+        return this;
+    }
+
+    public CurlRequest onConnect(final ConnectionBuilder connectionBuilder) {
+        this.connectionBuilder = connectionBuilder;
         return this;
     }
 
@@ -95,13 +114,17 @@ public class CurlRequest {
         try {
             connection = (HttpURLConnection) new URL(url).openConnection();
             connection.setRequestMethod(method.toString());
-            if (body != null) {
-                connection.setDoOutput(true);
-                try (BufferedWriter writer = new BufferedWriter(
-                        new OutputStreamWriter(connection.getOutputStream(),
-                                encoding))) {
-                    writer.write(body);
-                    writer.flush();
+            if (connectionBuilder != null) {
+                connectionBuilder.onConnect(this, connection);
+            } else {
+                if (body != null) {
+                    connection.setDoOutput(true);
+                    try (BufferedWriter writer = new BufferedWriter(
+                            new OutputStreamWriter(
+                                    connection.getOutputStream(), encoding))) {
+                        writer.write(body);
+                        writer.flush();
+                    }
                 }
             }
             listener.onResponse(connection);
@@ -143,11 +166,11 @@ public class CurlRequest {
                         }
                         bos.flush();
                         response.setContentFile(tempFile);
-                    } catch (Exception e) {
+                    } catch (final Exception e) {
                         response.setContentException(e);
                         try {
                             Files.deleteIfExists(tempFile);
-                        } catch (Exception ignore) {
+                        } catch (final Exception ignore) {
                             // ignore
                         }
                     }
@@ -165,6 +188,10 @@ public class CurlRequest {
         } catch (final UnsupportedEncodingException e) {
             throw new CurlException("Invalid encoding: " + encoding, e);
         }
+    }
+
+    public static interface ConnectionBuilder {
+        void onConnect(CurlRequest curlRequest, HttpURLConnection connection);
     }
 
 }
