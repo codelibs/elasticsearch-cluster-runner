@@ -96,17 +96,19 @@ public class CurlRequest {
             } else {
                 sp = '&';
             }
-            final StringBuilder urlBuf = new StringBuilder(url.length() + 100);
+            final StringBuilder urlBuf = new StringBuilder(100);
             for (final String param : paramList) {
                 urlBuf.append(sp).append(param);
                 if (sp == '?') {
                     sp = '&';
                 }
             }
-            if (Method.GET == method || body != null) {
+            if (Method.GET == method) {
                 url = url + urlBuf.toString();
-            } else {
+            } else if (body == null && connectionBuilder == null) {
                 body = urlBuf.substring(1);
+            } else {
+                url = url + urlBuf.toString();
             }
         }
 
