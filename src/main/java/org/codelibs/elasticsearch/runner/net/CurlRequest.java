@@ -103,13 +103,7 @@ public class CurlRequest {
                     sp = '&';
                 }
             }
-            if (Method.GET == method) {
-                url = url + urlBuf.toString();
-            } else if (body == null && connectionBuilder == null) {
-                body = urlBuf.substring(1);
-            } else {
-                url = url + urlBuf.toString();
-            }
+            url = url + urlBuf.toString();
         }
 
         HttpURLConnection connection = null;
