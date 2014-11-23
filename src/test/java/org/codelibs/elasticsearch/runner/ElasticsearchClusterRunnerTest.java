@@ -46,7 +46,10 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                 // settingsBuilder.put("discovery.zen.minimum_master_nodes",
                 // "3");
             }
-        }).build(newConfigs().ramIndexStore().numOfNode(3));
+        }).build(
+                newConfigs()
+                        .clusterName("es-cl-run-" + System.currentTimeMillis())
+                        .ramIndexStore().numOfNode(3));
 
         // wait for yellow status
         runner.ensureYellow();
