@@ -25,11 +25,13 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequestBuilder;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesResponse;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
+import org.elasticsearch.action.admin.indices.close.CloseIndexResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.admin.indices.flush.FlushResponse;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
+import org.elasticsearch.action.admin.indices.open.OpenIndexResponse;
 import org.elasticsearch.action.admin.indices.optimize.OptimizeResponse;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.count.CountResponse;
@@ -656,6 +658,24 @@ public class ElasticsearchClusterRunner {
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
             onFailure(shardFailures.toString(), actionGet);
+        }
+        return actionGet;
+    }
+
+    public OpenIndexResponse openIndex(final String index) {
+        final OpenIndexResponse actionGet = client().admin().indices()
+                .prepareOpen(index).execute().actionGet();
+        if (!actionGet.isAcknowledged()) {
+            onFailure("Failed to open " + index + ".", actionGet);
+        }
+        return actionGet;
+    }
+
+    public CloseIndexResponse closeIndex(final String index) {
+        final CloseIndexResponse actionGet = client().admin().indices()
+                .prepareClose(index).execute().actionGet();
+        if (!actionGet.isAcknowledged()) {
+            onFailure("Failed to close " + index + ".", actionGet);
         }
         return actionGet;
     }
