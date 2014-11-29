@@ -60,6 +60,7 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+import org.kohsuke.args4j.ParserProperties;
 
 /**
  * ElasticsearchClusterRunner manages multiple Elasticsearch instances.
@@ -225,8 +226,8 @@ public class ElasticsearchClusterRunner {
      */
     public void build(final String... args) {
         if (args != null) {
-            final CmdLineParser parser = new CmdLineParser(this);
-            parser.setUsageWidth(80);
+            final CmdLineParser parser = new CmdLineParser(this,
+                    ParserProperties.defaults().withUsageWidth(80));
 
             try {
                 parser.parseArgument(args);
@@ -249,8 +250,49 @@ public class ElasticsearchClusterRunner {
         final Path esBasePath = Paths.get(basePath);
         createDir(esBasePath);
 
-        final Path confPath = Paths.get(basePath, CONFIG_DIR);
+        print("----------------------------------------");
+        print("Cluster Name: " + clusterName);
+        print("Base Path:    " + basePath);
+        print("Num Of Node:  " + numOfNode);
+        print("----------------------------------------");
+
+        for (int i = 0; i < numOfNode; i++) {
+            final Settings settings = buildNodeSettings(i + 1);
+            final Node node = new InternalNode(settings, true);
+            node.start();
+            nodeList.add(node);
+            settingsList.add(settings);
+        }
+    }
+
+    protected Settings buildNodeSettings(final int number) {
+        final Path pluginsPath = Paths.get(basePath, PLUGINS_DIR);
+        final Path confPath = Paths.get(basePath, CONFIG_DIR, "node_" + number);
+        final Path logsPath = Paths.get(basePath, LOGS_DIR, "node_" + number);
+        final Path dataPath = Paths.get(basePath, DATA_DIR, "node_" + number);
+        final Path workPath = Paths.get(basePath, WORK_DIR, "node_" + number);
+
         createDir(confPath);
+        createDir(logsPath);
+        createDir(dataPath);
+        createDir(workPath);
+
+        final ImmutableSettings.Builder settingsBuilder = settingsBuilder();
+
+        if (builder != null) {
+            builder.build(number, settingsBuilder);
+        }
+
+        putIfAbsent(settingsBuilder, "path.conf", confPath.toAbsolutePath()
+                .toString());
+        putIfAbsent(settingsBuilder, "path.data", dataPath.toAbsolutePath()
+                .toString());
+        putIfAbsent(settingsBuilder, "path.work", workPath.toAbsolutePath()
+                .toString());
+        putIfAbsent(settingsBuilder, "path.logs", logsPath.toAbsolutePath()
+                .toString());
+        putIfAbsent(settingsBuilder, "path.plugins", pluginsPath
+                .toAbsolutePath().toString());
 
         final Path esConfPath = confPath.resolve(ELASTICSEARCH_YAML);
         if (!Files.exists(esConfPath)) {
@@ -275,49 +317,6 @@ public class ElasticsearchClusterRunner {
                         + logConfPath, e);
             }
         }
-
-        print("----------------------------------------");
-        print("Cluster Name: " + clusterName);
-        print("Base Path:    " + basePath);
-        print("Num Of Node:  " + numOfNode);
-        print("----------------------------------------");
-
-        for (int i = 0; i < numOfNode; i++) {
-            final Settings settings = buildNodeSettings(i + 1);
-            final Node node = new InternalNode(settings, true);
-            node.start();
-            nodeList.add(node);
-            settingsList.add(settings);
-        }
-    }
-
-    protected Settings buildNodeSettings(final int number) {
-        final Path confPath = Paths.get(basePath, CONFIG_DIR);
-        final Path pluginsPath = Paths.get(basePath, PLUGINS_DIR);
-        final Path logsPath = Paths.get(basePath, LOGS_DIR, "node_" + number);
-        final Path dataPath = Paths.get(basePath, DATA_DIR, "node_" + number);
-        final Path workPath = Paths.get(basePath, WORK_DIR, "node_" + number);
-
-        createDir(logsPath);
-        createDir(dataPath);
-        createDir(workPath);
-
-        final ImmutableSettings.Builder settingsBuilder = settingsBuilder();
-
-        if (builder != null) {
-            builder.build(number, settingsBuilder);
-        }
-
-        putIfAbsent(settingsBuilder, "path.conf", confPath.toAbsolutePath()
-                .toString());
-        putIfAbsent(settingsBuilder, "path.data", dataPath.toAbsolutePath()
-                .toString());
-        putIfAbsent(settingsBuilder, "path.work", workPath.toAbsolutePath()
-                .toString());
-        putIfAbsent(settingsBuilder, "path.logs", logsPath.toAbsolutePath()
-                .toString());
-        putIfAbsent(settingsBuilder, "path.plugins", pluginsPath
-                .toAbsolutePath().toString());
 
         final String nodeName = "Node " + number;
         final int transportPort = getAvailableTransportPort(number);
