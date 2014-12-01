@@ -8,7 +8,7 @@ This project runs Elasticsearch cluster on one JVM instance for your development
 | Version  | elasticsearch |
 |:--------:|:-------------:|
 | master   | 1.4.x         |
-| 1.4.0.2  | 1.4.0         |
+| 1.4.1.0  | 1.4.1         |
 | 1.3.2.3  | 1.3.2         |
 
 ## Run on Your Application
@@ -18,7 +18,7 @@ Put elasticsearch-cluster-runner if using Maven:
     <dependency>
         <groupId>org.codelibs</groupId>
         <artifactId>elasticsearch-cluster-runner</artifactId>
-        <version>1.4.0.2</version>
+        <version>1.4.1.0</version>
     </dependency>
 
 ### Start Cluster Runner
@@ -56,7 +56,7 @@ Put elasticsearch-cluster-runner as test scope:
     <dependency>
         <groupId>org.codelibs</groupId>
         <artifactId>elasticsearch-cluster-runner</artifactId>
-        <version>1.4.0.2</version>
+        <version>1.4.1.0</version>
         <scope>test</scope>
     </dependency>
 
