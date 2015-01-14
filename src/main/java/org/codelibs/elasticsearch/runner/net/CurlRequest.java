@@ -27,6 +27,8 @@ public class CurlRequest {
 
     protected List<String> paramList;
 
+    protected List<String[]> headerList;
+
     protected String body;
 
     private ConnectionBuilder connectionBuilder;
@@ -88,6 +90,14 @@ public class CurlRequest {
         return this;
     }
 
+    public CurlRequest header(final String key, final String value) {
+        if (headerList == null) {
+            headerList = new ArrayList<>();
+        }
+        headerList.add(new String[] { key, value });
+        return this;
+    }
+
     public void execute(final ResponseListener listener) {
         if (paramList != null) {
             char sp;
@@ -110,6 +120,11 @@ public class CurlRequest {
         try {
             connection = (HttpURLConnection) new URL(url).openConnection();
             connection.setRequestMethod(method.toString());
+            if (headerList != null) {
+                for (String[] values : headerList) {
+                    connection.addRequestProperty(values[0], values[1]);
+                }
+            }
             if (connectionBuilder != null) {
                 connectionBuilder.onConnect(this, connection);
             } else {
