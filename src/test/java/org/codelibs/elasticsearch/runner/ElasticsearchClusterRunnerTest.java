@@ -45,6 +45,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
             public void build(final int number, final Builder settingsBuilder) {
                 // settingsBuilder.put("discovery.zen.minimum_master_nodes",
                 // "3");
+                settingsBuilder.put("http.cors.enabled", true);
             }
         }).build(
                 newConfigs()
