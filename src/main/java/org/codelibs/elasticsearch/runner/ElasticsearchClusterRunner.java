@@ -624,7 +624,7 @@ public class ElasticsearchClusterRunner {
         waitForRelocation();
         final FlushResponse actionGet = client().admin().indices()
                 .prepareFlush().setWaitIfOngoing(true).setForce(force)
-                .setFull(true).execute().actionGet();
+                .execute().actionGet();
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
@@ -640,7 +640,7 @@ public class ElasticsearchClusterRunner {
     public RefreshResponse refresh(final boolean force) {
         waitForRelocation();
         final RefreshResponse actionGet = client().admin().indices()
-                .prepareRefresh().setForce(force).execute().actionGet();
+                .prepareRefresh().execute().actionGet();
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
