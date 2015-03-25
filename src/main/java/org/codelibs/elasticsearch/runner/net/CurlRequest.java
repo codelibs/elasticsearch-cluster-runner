@@ -3,6 +3,8 @@ package org.codelibs.elasticsearch.runner.net;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
@@ -154,43 +156,74 @@ public class CurlRequest {
             @Override
             public void onResponse(final HttpURLConnection con) {
                 try {
-                    response.setHttpStatusCode(con.getResponseCode());
                     response.setEncoding(encoding);
-                    final Path tempFile = Files.createTempFile("esrunner-",
-                            ".tmp");
-                    try (BufferedInputStream bis = new BufferedInputStream(
-                            con.getInputStream());
-                            BufferedOutputStream bos = new BufferedOutputStream(
-                                    Files.newOutputStream(tempFile,
-                                            StandardOpenOption.WRITE))) {
-                        byte[] bytes = new byte[4096];
-                        try {
-                            int length = bis.read(bytes);
-                            while (length != -1) {
-                                if (length != 0) {
-                                    bos.write(bytes, 0, length);
-                                }
-                                length = bis.read(bytes);
-                            }
-                        } finally {
-                            bytes = null;
+                    response.setHttpStatusCode(con.getResponseCode());
+                    writeContent(new InputStreamHandler() {
+                        @Override
+                        public InputStream open() throws IOException {
+                            return con.getInputStream();
                         }
-                        bos.flush();
-                        response.setContentFile(tempFile);
-                    } catch (final Exception e) {
-                        response.setContentException(e);
-                        try {
-                            Files.deleteIfExists(tempFile);
-                        } catch (final Exception ignore) {
-                            // ignore
-                        }
-                    }
+                    });
                 } catch (final Exception e) {
-                    throw new CurlException("Failed to access the response.", e);
+                    final InputStream errorStream = con.getErrorStream();
+                    if (errorStream != null) {
+                        writeContent(new InputStreamHandler() {
+                            @Override
+                            public InputStream open() throws IOException {
+                                return errorStream;
+                            }
+                        });
+                        // overwrite
+                        response.setContentException(e);
+                    } else {
+                        throw new CurlException(
+                                "Failed to access the response.", e);
+                    }
+                }
+            }
+
+            private void writeContent(final InputStreamHandler handler) {
+                final Path tempFile;
+                try {
+                    tempFile = Files.createTempFile("esrunner-", ".tmp");
+                } catch (IOException e) {
+                    throw new CurlException(
+                            "Failed to create a temporary file.", e);
+                }
+                try (BufferedInputStream bis = new BufferedInputStream(
+                        handler.open());
+                        BufferedOutputStream bos = new BufferedOutputStream(
+                                Files.newOutputStream(tempFile,
+                                        StandardOpenOption.WRITE))) {
+                    byte[] bytes = new byte[4096];
+                    try {
+                        int length = bis.read(bytes);
+                        while (length != -1) {
+                            if (length != 0) {
+                                bos.write(bytes, 0, length);
+                            }
+                            length = bis.read(bytes);
+                        }
+                    } finally {
+                        bytes = null;
+                    }
+                    bos.flush();
+                    response.setContentFile(tempFile);
+                } catch (final Exception e) {
+                    response.setContentException(e);
+                    try {
+                        Files.deleteIfExists(tempFile);
+                    } catch (final Exception ignore) {
+                        // ignore
+                    }
                 }
             }
         });
         return response;
+    }
+
+    private interface InputStreamHandler {
+        InputStream open() throws IOException;
     }
 
     protected String encode(final String value) {
