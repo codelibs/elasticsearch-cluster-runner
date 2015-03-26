@@ -628,7 +628,11 @@ public class ElasticsearchClusterRunner {
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
-            onFailure(shardFailures.toString(), actionGet);
+            StringBuilder buf = new StringBuilder(100);
+            for (ShardOperationFailedException shardFailure : shardFailures) {
+                buf.append(shardFailure.toString()).append('\n');
+            }
+            onFailure(buf.toString(), actionGet);
         }
         return actionGet;
     }
@@ -644,7 +648,11 @@ public class ElasticsearchClusterRunner {
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
-            onFailure(shardFailures.toString(), actionGet);
+            StringBuilder buf = new StringBuilder(100);
+            for (ShardOperationFailedException shardFailure : shardFailures) {
+                buf.append(shardFailure.toString()).append('\n');
+            }
+            onFailure(buf.toString(), actionGet);
         }
         return actionGet;
     }
@@ -656,7 +664,11 @@ public class ElasticsearchClusterRunner {
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
-            onFailure(shardFailures.toString(), actionGet);
+            StringBuilder buf = new StringBuilder(100);
+            for (ShardOperationFailedException shardFailure : shardFailures) {
+                buf.append(shardFailure.toString()).append('\n');
+            }
+            onFailure(buf.toString(), actionGet);
         }
         return actionGet;
     }
