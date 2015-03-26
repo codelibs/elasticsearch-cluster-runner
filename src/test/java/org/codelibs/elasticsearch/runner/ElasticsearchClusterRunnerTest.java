@@ -196,7 +196,10 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         }
 
         // optimize
-        runner.optimize(false);
+        runner.optimize();
+
+        // upgrade
+        runner.upgrade();
 
         // transport client
         final Settings settings = ImmutableSettings.settingsBuilder()

@@ -657,10 +657,21 @@ public class ElasticsearchClusterRunner {
         return actionGet;
     }
 
-    public OptimizeResponse optimize(final boolean force) {
+    public OptimizeResponse optimize() {
+        return optimize(-1, false, false);
+    }
+
+    public OptimizeResponse upgrade() {
+        return optimize(Integer.MAX_VALUE, false, true);
+    }
+
+    public OptimizeResponse optimize(final int maxNumSegments,
+            final boolean onlyExpungeDeletes, final boolean force) {
         waitForRelocation();
         final OptimizeResponse actionGet = client().admin().indices()
-                .prepareOptimize().setForce(force).execute().actionGet();
+                .prepareOptimize().setMaxNumSegments(maxNumSegments)
+                .setOnlyExpungeDeletes(onlyExpungeDeletes).setForce(force)
+                .execute().actionGet();
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
