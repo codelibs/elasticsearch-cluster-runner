@@ -43,9 +43,8 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         runner.onBuild(new ElasticsearchClusterRunner.Builder() {
             @Override
             public void build(final int number, final Builder settingsBuilder) {
-                // settingsBuilder.put("discovery.zen.minimum_master_nodes",
-                // "3");
                 settingsBuilder.put("http.cors.enabled", true);
+                settingsBuilder.put("index.unassigned.node_left.delayed_timeout","0");
             }
         }).build(
                 newConfigs()
