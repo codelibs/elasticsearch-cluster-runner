@@ -203,7 +203,7 @@ public class ElasticsearchClusterRunner {
      * Configure each Elasticsearch instance by builder.
      *
      * @param builder
-     * @return
+     * @return this instance
      */
     public ElasticsearchClusterRunner onBuild(final Builder builder) {
         this.builder = builder;
@@ -492,7 +492,7 @@ public class ElasticsearchClusterRunner {
     /**
      * Return an available node.
      *
-     * @return
+     * @return an available node
      */
     public Node node() {
         for (final Node node : nodeList) {
@@ -506,7 +506,7 @@ public class ElasticsearchClusterRunner {
     /**
      * Return a master node.
      *
-     * @return
+     * @return a master node
      */
     public synchronized Node masterNode() {
         final ClusterState state = client().admin().cluster().prepareState()
@@ -518,7 +518,7 @@ public class ElasticsearchClusterRunner {
     /**
      * Return a non-master node.
      *
-     * @return
+     * @return a non-master node
      */
     public synchronized Node nonMasterNode() {
         final ClusterState state = client().admin().cluster().prepareState()
@@ -535,7 +535,7 @@ public class ElasticsearchClusterRunner {
     /**
      * Return an elasticsearch client.
      *
-     * @return
+     * @return elasticsearch client
      */
     public Client client() {
         return node().client();
@@ -544,7 +544,7 @@ public class ElasticsearchClusterRunner {
     /**
      * Return an elasticsearch admin client.
      *
-     * @return
+     * @return elasticsearch admin client
      */
     public AdminClient admin() {
         return client().admin();
@@ -554,7 +554,7 @@ public class ElasticsearchClusterRunner {
      * Wait for green state of a cluster.
      *
      * @param indices
-     * @return
+     * @return status for cluster health
      */
     public ClusterHealthStatus ensureGreen(final String... indices) {
         final ClusterHealthResponse actionGet = client()
@@ -578,7 +578,7 @@ public class ElasticsearchClusterRunner {
      * Wait for yellow state of a cluster.
      *
      * @param indices
-     * @return
+     * @return status for cluster health
      */
     public ClusterHealthStatus ensureYellow(final String... indices) {
         final ClusterHealthResponse actionGet = client()
