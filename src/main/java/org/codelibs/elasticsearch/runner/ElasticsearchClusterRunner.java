@@ -734,10 +734,10 @@ public class ElasticsearchClusterRunner {
     }
 
     public PutMappingResponse createMapping(final String index,
-            final String type, final String mappnigSource) {
+            final String type, final String mappingSource) {
         final PutMappingResponse actionGet = client().admin().indices()
                 .preparePutMapping(index).setType(type)
-                .setSource(mappnigSource).execute().actionGet();
+                .setSource(mappingSource).execute().actionGet();
         if (!actionGet.isAcknowledged()) {
             onFailure("Failed to create a mapping for " + index + ".",
                     actionGet);
