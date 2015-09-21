@@ -6,9 +6,8 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
 import java.util.Map;
-
-import junit.framework.TestCase;
 
 import org.codelibs.elasticsearch.runner.net.Curl;
 import org.codelibs.elasticsearch.runner.net.CurlException;
@@ -18,18 +17,17 @@ import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
 import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.ImmutableSettings.Builder;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
+
+import junit.framework.TestCase;
 
 public class ElasticsearchClusterRunnerTest extends TestCase {
 
@@ -43,14 +41,14 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         runner.onBuild(new ElasticsearchClusterRunner.Builder() {
             @Override
             public void build(final int number, final Builder settingsBuilder) {
-                // settingsBuilder.put("discovery.zen.minimum_master_nodes",
-                // "3");
                 settingsBuilder.put("http.cors.enabled", true);
+                settingsBuilder.put("http.cors.allow-origin", "*");
+                settingsBuilder.putArray("discovery.zen.ping.unicast.hosts", "localhost:9301-9399");
             }
         }).build(
                 newConfigs()
                         .clusterName("es-cl-run-" + System.currentTimeMillis())
-                        .ramIndexStore().numOfNode(3));
+                        .numOfNode(3));
 
         // wait for yellow status
         runner.ensureYellow();
@@ -202,24 +200,14 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         runner.upgrade();
 
         // transport client
-        final Settings settings = ImmutableSettings.settingsBuilder()
+        final Settings transportClientSettings = Settings.settingsBuilder()
                 .put("cluster.name", runner.getClusterName()).build();
         final int port = runner.node().settings()
                 .getAsInt("transport.tcp.port", 9300);
-        try (TransportClient client = new TransportClient(settings)) {
+        try (TransportClient client = TransportClient.builder()
+                .settings(transportClientSettings).build()) {
             client.addTransportAddress(new InetSocketTransportAddress(
-                    "localhost", port));
-            final SearchResponse searchResponse = client.prepareSearch(index)
-                    .setTypes(type).setQuery(QueryBuilders.matchAllQuery())
-                    .execute().actionGet();
-            assertEquals(999, searchResponse.getHits().getTotalHits());
-            assertEquals(10, searchResponse.getHits().hits().length);
-        }
-
-        // node client
-        try (Client client = NodeBuilder.nodeBuilder().settings(settings)
-                .client(true).clusterName(runner.getClusterName()).node()
-                .client()) {
+                    new InetSocketAddress("localhost", port)));
             final SearchResponse searchResponse = client.prepareSearch(index)
                     .setTypes(type).setQuery(QueryBuilders.matchAllQuery())
                     .execute().actionGet();

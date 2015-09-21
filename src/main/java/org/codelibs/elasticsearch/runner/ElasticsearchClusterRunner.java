@@ -1,6 +1,6 @@
 package org.codelibs.elasticsearch.runner;
 
-import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
+import static org.elasticsearch.common.settings.Settings.settingsBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +34,7 @@ import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.admin.indices.open.OpenIndexResponse;
 import org.elasticsearch.action.admin.indices.optimize.OptimizeResponse;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
+import org.elasticsearch.action.admin.indices.upgrade.post.UpgradeResponse;
 import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexResponse;
@@ -48,13 +49,11 @@ import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.logging.log4j.LogConfigurator;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.internal.InternalNode;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.kohsuke.args4j.CmdLineException;
@@ -258,7 +257,7 @@ public class ElasticsearchClusterRunner {
 
         for (int i = 0; i < numOfNode; i++) {
             final Settings settings = buildNodeSettings(i + 1);
-            final Node node = new InternalNode(settings, true);
+            final Node node = new Node(settings);
             node.start();
             nodeList.add(node);
             settingsList.add(settings);
@@ -266,23 +265,27 @@ public class ElasticsearchClusterRunner {
     }
 
     protected Settings buildNodeSettings(final int number) {
+        final Path homePath = Paths.get(basePath);
         final Path pluginsPath = Paths.get(basePath, PLUGINS_DIR);
         final Path confPath = Paths.get(basePath, CONFIG_DIR, "node_" + number);
         final Path logsPath = Paths.get(basePath, LOGS_DIR, "node_" + number);
         final Path dataPath = Paths.get(basePath, DATA_DIR, "node_" + number);
         final Path workPath = Paths.get(basePath, WORK_DIR, "node_" + number);
 
+        createDir(homePath);
         createDir(confPath);
         createDir(logsPath);
         createDir(dataPath);
         createDir(workPath);
 
-        final ImmutableSettings.Builder settingsBuilder = settingsBuilder();
+        final Settings.Builder settingsBuilder = settingsBuilder();
 
         if (builder != null) {
             builder.build(number, settingsBuilder);
         }
 
+        putIfAbsent(settingsBuilder, "path.home", homePath.toAbsolutePath()
+                .toString());
         putIfAbsent(settingsBuilder, "path.conf", confPath.toAbsolutePath()
                 .toString());
         putIfAbsent(settingsBuilder, "path.data", dataPath.toAbsolutePath()
@@ -381,7 +384,7 @@ public class ElasticsearchClusterRunner {
                 + " is unavailable.");
     }
 
-    protected void putIfAbsent(final ImmutableSettings.Builder settingsBuilder,
+    protected void putIfAbsent(final Settings.Builder settingsBuilder,
             final String key, final String value) {
         if (settingsBuilder.get(key) == null && value != null) {
             settingsBuilder.put(key, value);
@@ -422,7 +425,7 @@ public class ElasticsearchClusterRunner {
         if (!nodeList.get(i).isClosed()) {
             return false;
         }
-        final Node node = new InternalNode(settingsList.get(i), true);
+        final Node node = new Node(settingsList.get(i));
         node.start();
         nodeList.set(i, node);
         return true;
@@ -638,10 +641,6 @@ public class ElasticsearchClusterRunner {
     }
 
     public RefreshResponse refresh() {
-        return refresh(true);
-    }
-
-    public RefreshResponse refresh(final boolean force) {
         waitForRelocation();
         final RefreshResponse actionGet = client().admin().indices()
                 .prepareRefresh().execute().actionGet();
@@ -657,20 +656,38 @@ public class ElasticsearchClusterRunner {
         return actionGet;
     }
 
-    public OptimizeResponse optimize() {
-        return optimize(-1, false, false);
+    public UpgradeResponse upgrade() {
+        return upgrade(true);
     }
 
-    public OptimizeResponse upgrade() {
-        return optimize(Integer.MAX_VALUE, false, true);
+    public UpgradeResponse upgrade(final boolean upgradeOnlyAncientSegments) {
+        waitForRelocation();
+        final UpgradeResponse actionGet = client().admin().indices()
+                .prepareUpgrade()
+                .setUpgradeOnlyAncientSegments(upgradeOnlyAncientSegments)
+                .execute().actionGet();
+        final ShardOperationFailedException[] shardFailures = actionGet
+                .getShardFailures();
+        if (shardFailures != null && shardFailures.length != 0) {
+            StringBuilder buf = new StringBuilder(100);
+            for (ShardOperationFailedException shardFailure : shardFailures) {
+                buf.append(shardFailure.toString()).append('\n');
+            }
+            onFailure(buf.toString(), actionGet);
+        }
+        return actionGet;
+    }
+
+    public OptimizeResponse optimize() {
+        return optimize(-1, false, true);
     }
 
     public OptimizeResponse optimize(final int maxNumSegments,
-            final boolean onlyExpungeDeletes, final boolean force) {
+            final boolean onlyExpungeDeletes, final boolean flush) {
         waitForRelocation();
         final OptimizeResponse actionGet = client().admin().indices()
                 .prepareOptimize().setMaxNumSegments(maxNumSegments)
-                .setOnlyExpungeDeletes(onlyExpungeDeletes).setForce(force)
+                .setOnlyExpungeDeletes(onlyExpungeDeletes).setFlush(flush)
                 .execute().actionGet();
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
@@ -710,7 +727,7 @@ public class ElasticsearchClusterRunner {
                 .prepareCreate(index)
                 .setSettings(
                         settings != null ? settings
-                                : ImmutableSettings.Builder.EMPTY_SETTINGS)
+                                : Settings.Builder.EMPTY_SETTINGS)
                 .execute().actionGet();
         if (!actionGet.isAcknowledged()) {
             onFailure("Failed to create " + index + ".", actionGet);
@@ -829,10 +846,7 @@ public class ElasticsearchClusterRunner {
 
     public synchronized <T> T getInstance(final Class<T> clazz) {
         final Node node = masterNode();
-        if (node instanceof InternalNode) {
-            return ((InternalNode) node).injector().getInstance(clazz);
-        }
-        return null;
+        return node.injector().getInstance(clazz);
     }
 
     public String getClusterName() {
@@ -913,7 +927,7 @@ public class ElasticsearchClusterRunner {
          * @param index an index of nodes
          * @param settingsBuilder a builder instance to create a node
          */
-        void build(int index, ImmutableSettings.Builder settingsBuilder);
+        void build(int index, Settings.Builder settingsBuilder);
     }
 
     public static Configs newConfigs() {
@@ -963,10 +977,6 @@ public class ElasticsearchClusterRunner {
             configList.add("-indexStoreType");
             configList.add(indexStoreType);
             return this;
-        }
-
-        public Configs ramIndexStore() {
-            return indexStoreType("ram");
         }
 
         public Configs useLogger() {
