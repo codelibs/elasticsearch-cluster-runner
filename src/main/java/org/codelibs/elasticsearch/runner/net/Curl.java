@@ -43,7 +43,7 @@ public class Curl {
     }
 
     public enum Method {
-        GET, POST, PUT, DELETE;
+        OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, CONNECT;
     }
 
     public interface ResponseListener {
