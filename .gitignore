@@ -1,5 +1,6 @@
 target/
 es_home/
+.settings/
 .classpath
 .project
 .idea
