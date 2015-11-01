@@ -342,7 +342,7 @@ public class ElasticsearchClusterRunner {
         print("----------------------------------------");
 
         final Settings settings = settingsBuilder.build();
-        LogConfigurator.configure(settings);
+        LogConfigurator.configure(settings, true);
         return settings;
     }
 
