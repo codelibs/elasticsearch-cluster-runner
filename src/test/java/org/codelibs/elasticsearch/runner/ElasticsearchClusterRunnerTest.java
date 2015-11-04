@@ -1,6 +1,7 @@
 package org.codelibs.elasticsearch.runner;
 
 import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
+import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -17,6 +18,7 @@ import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
 import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
@@ -33,8 +35,11 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
 
     private ElasticsearchClusterRunner runner;
 
+    private String clusterName;
+
     @Override
     protected void setUp() throws Exception {
+        clusterName = "es-cl-run-" + System.currentTimeMillis();
         // create runner instance
         runner = new ElasticsearchClusterRunner();
         // create ES nodes
@@ -47,7 +52,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
             }
         }).build(
                 newConfigs()
-                        .clusterName("es-cl-run-" + System.currentTimeMillis())
+                        .clusterName(clusterName)
                         .numOfNode(3));
 
         // wait for yellow status
@@ -198,6 +203,21 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
 
         // upgrade
         runner.upgrade();
+
+        // node client
+        try (Node node = nodeBuilder()
+                .clusterName(clusterName).settings(Settings.settingsBuilder()
+                        .put("http.enabled", false).put("path.home", System.getProperty("java.io.tmpdir")))
+                .client(true).node()) {
+            try (Client nodeClient = node.client()) {
+                final SearchResponse searchResponse = nodeClient
+                        .prepareSearch(index).setTypes(type)
+                        .setQuery(QueryBuilders.matchAllQuery()).execute()
+                        .actionGet();
+                assertEquals(999, searchResponse.getHits().getTotalHits());
+                assertEquals(10, searchResponse.getHits().hits().length);
+            }
+        }
 
         // transport client
         final Settings transportClientSettings = Settings.settingsBuilder()
