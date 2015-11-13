@@ -8,6 +8,7 @@ This project runs Elasticsearch cluster on one JVM instance for your development
 | Version  | elasticsearch |
 |:--------:|:-------------:|
 | master   | 2.0.x         |
+| 2.0.0.0  | 2.0.0         |
 | 1.7.0.0  | 1.7.1         |
 | 1.6.0.0  | 1.6.0         |
 | 1.5.0.1  | 1.5.0         |
@@ -21,7 +22,7 @@ Put elasticsearch-cluster-runner if using Maven:
     <dependency>
         <groupId>org.codelibs</groupId>
         <artifactId>elasticsearch-cluster-runner</artifactId>
-        <version>1.7.0.0</version>
+        <version>2.0.0.0</version>
     </dependency>
 
 ### Start Cluster Runner
@@ -35,10 +36,9 @@ Put elasticsearch-cluster-runner if using Maven:
         @Override
         public void build(final int number, final Builder settingsBuilder) {
             // put elasticsearch settings
-            // settingsBuilder.put("http.cors.enabled", true);
             // settingsBuilder.put("index.number_of_replicas", 0);
         }
-    }).build(newConfigs().ramIndexStore());
+    }).build(newConfigs());
 
 build(Configs) method configures/starts Clsuter Runner.
 
@@ -59,7 +59,7 @@ Put elasticsearch-cluster-runner as test scope:
     <dependency>
         <groupId>org.codelibs</groupId>
         <artifactId>elasticsearch-cluster-runner</artifactId>
-        <version>1.7.0.0</version>
+        <version>2.0.0.0</version>
         <scope>test</scope>
     </dependency>
 
