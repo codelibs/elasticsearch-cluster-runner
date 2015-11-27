@@ -52,6 +52,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.node.ClusterRunnerNode;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -256,7 +257,7 @@ public class ElasticsearchClusterRunner {
 
         for (int i = 0; i < numOfNode; i++) {
             final Settings settings = buildNodeSettings(i + 1);
-            final Node node = new Node(settings);
+            final Node node = new ClusterRunnerNode(settings);
             node.start();
             nodeList.add(node);
             settingsList.add(settings);
@@ -424,7 +425,7 @@ public class ElasticsearchClusterRunner {
         if (!nodeList.get(i).isClosed()) {
             return false;
         }
-        final Node node = new Node(settingsList.get(i));
+        final Node node = new ClusterRunnerNode(settingsList.get(i));
         node.start();
         nodeList.set(i, node);
         return true;
