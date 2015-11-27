@@ -30,12 +30,11 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.admin.indices.flush.FlushResponse;
+import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeResponse;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.admin.indices.open.OpenIndexResponse;
-import org.elasticsearch.action.admin.indices.optimize.OptimizeResponse;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.admin.indices.upgrade.post.UpgradeResponse;
-import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -678,15 +677,15 @@ public class ElasticsearchClusterRunner {
         return actionGet;
     }
 
-    public OptimizeResponse optimize() {
-        return optimize(-1, false, true);
+    public ForceMergeResponse forceMerge() {
+        return forceMerge(-1, false, true);
     }
 
-    public OptimizeResponse optimize(final int maxNumSegments,
+    public ForceMergeResponse forceMerge(final int maxNumSegments,
             final boolean onlyExpungeDeletes, final boolean flush) {
         waitForRelocation();
-        final OptimizeResponse actionGet = client().admin().indices()
-                .prepareOptimize().setMaxNumSegments(maxNumSegments)
+        final ForceMergeResponse actionGet = client().admin().indices()
+                .prepareForceMerge().setMaxNumSegments(maxNumSegments)
                 .setOnlyExpungeDeletes(onlyExpungeDeletes).setFlush(flush)
                 .execute().actionGet();
         final ShardOperationFailedException[] shardFailures = actionGet
@@ -797,9 +796,9 @@ public class ElasticsearchClusterRunner {
         return actionGet;
     }
 
-    public CountResponse count(final String index, final String type) {
-        final CountResponse actionGet = client().prepareCount(index)
-                .setTypes(type).execute().actionGet();
+    public SearchResponse count(final String index, final String type) {
+        final SearchResponse actionGet = client().prepareSearch(index)
+                .setTypes(type).setSize(0).execute().actionGet();
         return actionGet;
     }
 

@@ -15,7 +15,6 @@ import org.codelibs.elasticsearch.runner.net.CurlException;
 import org.codelibs.elasticsearch.runner.net.CurlRequest;
 import org.codelibs.elasticsearch.runner.net.CurlResponse;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
-import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -48,7 +47,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
             public void build(final int number, final Builder settingsBuilder) {
                 settingsBuilder.put("http.cors.enabled", true);
                 settingsBuilder.put("http.cors.allow-origin", "*");
-                settingsBuilder.putArray("discovery.zen.ping.unicast.hosts", "localhost:9301-9399");
+                settingsBuilder.putArray("discovery.zen.ping.unicast.hosts", "localhost:9301-9305");
             }
         }).build(
                 newConfigs()
@@ -183,8 +182,8 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         }
 
         {
-            final CountResponse countResponse = runner.count(index, type);
-            assertEquals(1000, countResponse.getCount());
+            final SearchResponse searchResponse = runner.count(index, type);
+            assertEquals(1000, searchResponse.getHits().getTotalHits());
         }
 
         // delete 1 document
@@ -199,7 +198,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         }
 
         // optimize
-        runner.optimize();
+        runner.forceMerge();
 
         // upgrade
         runner.upgrade();
