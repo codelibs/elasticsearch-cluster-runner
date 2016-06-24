@@ -93,7 +93,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         final String type = "test_type";
 
         // create an index
-        runner.createIndex(index, null);
+        runner.createIndex(index, (Settings)null);
         runner.ensureYellow(index);
 
         // create a mapping

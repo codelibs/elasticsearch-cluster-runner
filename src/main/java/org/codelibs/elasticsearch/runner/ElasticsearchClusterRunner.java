@@ -24,19 +24,33 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequestBuilder;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesResponse;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequestBuilder;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
+import org.elasticsearch.action.admin.indices.close.CloseIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.close.CloseIndexResponse;
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
+import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
+import org.elasticsearch.action.admin.indices.flush.FlushRequestBuilder;
 import org.elasticsearch.action.admin.indices.flush.FlushResponse;
+import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeRequestBuilder;
 import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeResponse;
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequestBuilder;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
+import org.elasticsearch.action.admin.indices.open.OpenIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.open.OpenIndexResponse;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequestBuilder;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
+import org.elasticsearch.action.admin.indices.upgrade.post.UpgradeRequestBuilder;
 import org.elasticsearch.action.admin.indices.upgrade.post.UpgradeResponse;
+import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.Client;
@@ -624,12 +638,18 @@ public class ElasticsearchClusterRunner {
     }
 
     public FlushResponse flush(final boolean force) {
+        return flush(new BuilderCallback<FlushRequestBuilder>() {
+            @Override
+            public FlushRequestBuilder apply(FlushRequestBuilder builder) {
+                return builder.setWaitIfOngoing(true).setForce(force);
+            }
+        });
+    }
+
+    public FlushResponse flush(final BuilderCallback<FlushRequestBuilder> builder) {
         waitForRelocation();
-        final FlushResponse actionGet = client().admin().indices()
-                .prepareFlush().setWaitIfOngoing(true).setForce(force)
-                .execute().actionGet();
-        final ShardOperationFailedException[] shardFailures = actionGet
-                .getShardFailures();
+        final FlushResponse actionGet = builder.apply(client().admin().indices().prepareFlush()).execute().actionGet();
+        final ShardOperationFailedException[] shardFailures = actionGet.getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
             StringBuilder buf = new StringBuilder(100);
             for (ShardOperationFailedException shardFailure : shardFailures) {
@@ -641,11 +661,18 @@ public class ElasticsearchClusterRunner {
     }
 
     public RefreshResponse refresh() {
+        return refresh(new BuilderCallback<RefreshRequestBuilder>() {
+            @Override
+            public RefreshRequestBuilder apply(RefreshRequestBuilder builder) {
+                return builder;
+            }
+        });
+    }
+
+    public RefreshResponse refresh(final BuilderCallback<RefreshRequestBuilder> builder) {
         waitForRelocation();
-        final RefreshResponse actionGet = client().admin().indices()
-                .prepareRefresh().execute().actionGet();
-        final ShardOperationFailedException[] shardFailures = actionGet
-                .getShardFailures();
+        final RefreshResponse actionGet = builder.apply(client().admin().indices().prepareRefresh()).execute().actionGet();
+        final ShardOperationFailedException[] shardFailures = actionGet.getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
             StringBuilder buf = new StringBuilder(100);
             for (ShardOperationFailedException shardFailure : shardFailures) {
@@ -661,13 +688,18 @@ public class ElasticsearchClusterRunner {
     }
 
     public UpgradeResponse upgrade(final boolean upgradeOnlyAncientSegments) {
+        return upgrade(new BuilderCallback<UpgradeRequestBuilder>() {
+            @Override
+            public UpgradeRequestBuilder apply(UpgradeRequestBuilder builder) {
+                return builder.setUpgradeOnlyAncientSegments(upgradeOnlyAncientSegments);
+            }
+        });
+    }
+
+    public UpgradeResponse upgrade(final BuilderCallback<UpgradeRequestBuilder> builder) {
         waitForRelocation();
-        final UpgradeResponse actionGet = client().admin().indices()
-                .prepareUpgrade()
-                .setUpgradeOnlyAncientSegments(upgradeOnlyAncientSegments)
-                .execute().actionGet();
-        final ShardOperationFailedException[] shardFailures = actionGet
-                .getShardFailures();
+        final UpgradeResponse actionGet = builder.apply(client().admin().indices().prepareUpgrade()).execute().actionGet();
+        final ShardOperationFailedException[] shardFailures = actionGet.getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
             StringBuilder buf = new StringBuilder(100);
             for (ShardOperationFailedException shardFailure : shardFailures) {
@@ -682,15 +714,19 @@ public class ElasticsearchClusterRunner {
         return forceMerge(-1, false, true);
     }
 
-    public ForceMergeResponse forceMerge(final int maxNumSegments,
-            final boolean onlyExpungeDeletes, final boolean flush) {
+    public ForceMergeResponse forceMerge(final int maxNumSegments, final boolean onlyExpungeDeletes, final boolean flush) {
+        return forceMerge(new BuilderCallback<ForceMergeRequestBuilder>() {
+            @Override
+            public ForceMergeRequestBuilder apply(ForceMergeRequestBuilder builder) {
+                return builder.setMaxNumSegments(maxNumSegments).setOnlyExpungeDeletes(onlyExpungeDeletes).setFlush(flush);
+            }
+        });
+    }
+
+    public ForceMergeResponse forceMerge(final BuilderCallback<ForceMergeRequestBuilder> builder) {
         waitForRelocation();
-        final ForceMergeResponse actionGet = client().admin().indices()
-                .prepareForceMerge().setMaxNumSegments(maxNumSegments)
-                .setOnlyExpungeDeletes(onlyExpungeDeletes).setFlush(flush)
-                .execute().actionGet();
-        final ShardOperationFailedException[] shardFailures = actionGet
-                .getShardFailures();
+        final ForceMergeResponse actionGet = builder.apply(client().admin().indices().prepareForceMerge()).execute().actionGet();
+        final ShardOperationFailedException[] shardFailures = actionGet.getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
             StringBuilder buf = new StringBuilder(100);
             for (ShardOperationFailedException shardFailure : shardFailures) {
@@ -702,8 +738,16 @@ public class ElasticsearchClusterRunner {
     }
 
     public OpenIndexResponse openIndex(final String index) {
-        final OpenIndexResponse actionGet = client().admin().indices()
-                .prepareOpen(index).execute().actionGet();
+        return openIndex(index, new BuilderCallback<OpenIndexRequestBuilder>() {
+            @Override
+            public OpenIndexRequestBuilder apply(OpenIndexRequestBuilder builder) {
+                return builder;
+            }
+        });
+    }
+
+    public OpenIndexResponse openIndex(final String index, final BuilderCallback<OpenIndexRequestBuilder> builder) {
+        final OpenIndexResponse actionGet = builder.apply(client().admin().indices().prepareOpen(index)).execute().actionGet();
         if (!actionGet.isAcknowledged()) {
             onFailure("Failed to open " + index + ".", actionGet);
         }
@@ -711,24 +755,33 @@ public class ElasticsearchClusterRunner {
     }
 
     public CloseIndexResponse closeIndex(final String index) {
-        final CloseIndexResponse actionGet = client().admin().indices()
-                .prepareClose(index).execute().actionGet();
+        return closeIndex(index, new BuilderCallback<CloseIndexRequestBuilder>() {
+            @Override
+            public CloseIndexRequestBuilder apply(CloseIndexRequestBuilder builder) {
+                return builder;
+            }
+        });
+    }
+
+    public CloseIndexResponse closeIndex(final String index, final BuilderCallback<CloseIndexRequestBuilder> builder) {
+        final CloseIndexResponse actionGet = builder.apply(client().admin().indices().prepareClose(index)).execute().actionGet();
         if (!actionGet.isAcknowledged()) {
             onFailure("Failed to close " + index + ".", actionGet);
         }
         return actionGet;
     }
 
-    public CreateIndexResponse createIndex(final String index,
-            final Settings settings) {
-        final CreateIndexResponse actionGet = client()
-                .admin()
-                .indices()
-                .prepareCreate(index)
-                .setSettings(
-                        settings != null ? settings
-                                : Settings.Builder.EMPTY_SETTINGS)
-                .execute().actionGet();
+    public CreateIndexResponse createIndex(final String index, final Settings settings) {
+        return createIndex(index, new BuilderCallback<CreateIndexRequestBuilder>() {
+            @Override
+            public CreateIndexRequestBuilder apply(CreateIndexRequestBuilder builder) {
+                return builder.setSettings(settings != null ? settings : Settings.Builder.EMPTY_SETTINGS);
+            }
+        });
+    }
+
+    public CreateIndexResponse createIndex(final String index, final BuilderCallback<CreateIndexRequestBuilder> builder) {
+        final CreateIndexResponse actionGet = builder.apply(client().admin().indices().prepareCreate(index)).execute().actionGet();
         if (!actionGet.isAcknowledged()) {
             onFailure("Failed to create " + index + ".", actionGet);
         }
@@ -736,106 +789,161 @@ public class ElasticsearchClusterRunner {
     }
 
     public boolean indexExists(final String index) {
-        final IndicesExistsResponse actionGet = client().admin().indices()
-                .prepareExists(index).execute().actionGet();
+        return indexExists(index, new BuilderCallback<IndicesExistsRequestBuilder>() {
+            @Override
+            public IndicesExistsRequestBuilder apply(IndicesExistsRequestBuilder builder) {
+                return builder;
+            }
+        });
+    }
+
+    public boolean indexExists(final String index, final BuilderCallback<IndicesExistsRequestBuilder> builder) {
+        final IndicesExistsResponse actionGet = builder.apply(client().admin().indices().prepareExists(index)).execute().actionGet();
         return actionGet.isExists();
     }
 
     public DeleteIndexResponse deleteIndex(final String index) {
-        final DeleteIndexResponse actionGet = client().admin().indices()
-                .prepareDelete(index).execute().actionGet();
+        return deleteIndex(index, new BuilderCallback<DeleteIndexRequestBuilder>() {
+            @Override
+            public DeleteIndexRequestBuilder apply(DeleteIndexRequestBuilder builder) {
+                return builder;
+            }
+        });
+    }
+
+    public DeleteIndexResponse deleteIndex(final String index, final BuilderCallback<DeleteIndexRequestBuilder> builder) {
+        final DeleteIndexResponse actionGet = builder.apply(client().admin().indices().prepareDelete(index)).execute().actionGet();
         if (!actionGet.isAcknowledged()) {
             onFailure("Failed to create " + index + ".", actionGet);
         }
         return actionGet;
     }
 
-    public PutMappingResponse createMapping(final String index,
-            final String type, final String mappingSource) {
-        final PutMappingResponse actionGet = client().admin().indices()
-                .preparePutMapping(index).setType(type)
-                .setSource(mappingSource).execute().actionGet();
+    public PutMappingResponse createMapping(final String index, final String type, final String mappingSource) {
+        return createMapping(index, new BuilderCallback<PutMappingRequestBuilder>() {
+            @Override
+            public PutMappingRequestBuilder apply(PutMappingRequestBuilder builder) {
+                return builder.setType(type).setSource(mappingSource);
+            }
+        });
+    }
+
+    public PutMappingResponse createMapping(final String index, final String type, final XContentBuilder source) {
+        return createMapping(index, new BuilderCallback<PutMappingRequestBuilder>() {
+            @Override
+            public PutMappingRequestBuilder apply(PutMappingRequestBuilder builder) {
+                return builder.setType(type).setSource(source);
+            }
+        });
+    }
+
+    public PutMappingResponse createMapping(final String index, final BuilderCallback<PutMappingRequestBuilder> builder) {
+        final PutMappingResponse actionGet = builder.apply(client().admin().indices().preparePutMapping(index)).execute().actionGet();
         if (!actionGet.isAcknowledged()) {
-            onFailure("Failed to create a mapping for " + index + ".",
-                    actionGet);
+            onFailure("Failed to create a mapping for " + index + ".", actionGet);
         }
         return actionGet;
     }
 
-    public PutMappingResponse createMapping(final String index,
-            final String type, final XContentBuilder source) {
-        final PutMappingResponse actionGet = client().admin().indices()
-                .preparePutMapping(index).setType(type).setSource(source)
-                .execute().actionGet();
-        if (!actionGet.isAcknowledged()) {
-            onFailure("Failed to create a mapping for " + index + ".",
-                    actionGet);
-        }
-        return actionGet;
+    public IndexResponse insert(final String index, final String type, final String id, final String source) {
+        return insert(index, type, id, new BuilderCallback<IndexRequestBuilder>() {
+            @Override
+            public IndexRequestBuilder apply(IndexRequestBuilder builder) {
+                return builder.setSource(source).setRefresh(true);
+            }
+        });
     }
 
-    public IndexResponse insert(final String index, final String type,
-            final String id, final String source) {
-        final IndexResponse actionGet = client().prepareIndex(index, type, id)
-                .setSource(source).setRefresh(true).execute().actionGet();
+    public IndexResponse insert(final String index, final String type, final String id,
+            final BuilderCallback<IndexRequestBuilder> builder) {
+        final IndexResponse actionGet = builder.apply(client().prepareIndex(index, type, id)).execute().actionGet();
         if (!actionGet.isCreated()) {
-            onFailure("Failed to insert " + id + " into " + index + "/" + type
-                    + ".", actionGet);
+            onFailure("Failed to insert " + id + " into " + index + "/" + type + ".", actionGet);
         }
         return actionGet;
     }
 
-    public DeleteResponse delete(final String index, final String type,
-            final String id) {
-        final DeleteResponse actionGet = client()
-                .prepareDelete(index, type, id).setRefresh(true).execute()
-                .actionGet();
+    public DeleteResponse delete(final String index, final String type, final String id) {
+        return delete(index, type, id, new BuilderCallback<DeleteRequestBuilder>() {
+            @Override
+            public DeleteRequestBuilder apply(DeleteRequestBuilder builder) {
+                return builder.setRefresh(true);
+            }
+        });
+    }
+
+    public DeleteResponse delete(final String index, final String type, final String id,
+            final BuilderCallback<DeleteRequestBuilder> builder) {
+        final DeleteResponse actionGet = builder.apply(client().prepareDelete(index, type, id)).execute().actionGet();
         if (!actionGet.isFound()) {
-            onFailure("Failed to delete " + id + " from " + index + "/" + type
-                    + ".", actionGet);
+            onFailure("Failed to delete " + id + " from " + index + "/" + type + ".", actionGet);
         }
         return actionGet;
     }
 
     public SearchResponse count(final String index, final String type) {
-        final SearchResponse actionGet = client().prepareSearch(index)
-                .setTypes(type).setSize(0).execute().actionGet();
+        return count(index, new BuilderCallback<SearchRequestBuilder>() {
+            @Override
+            public SearchRequestBuilder apply(SearchRequestBuilder builder) {
+                return builder.setTypes(type);
+            }
+        });
+    }
+
+    public SearchResponse count(final String index, final BuilderCallback<SearchRequestBuilder> builder) {
+        final SearchResponse actionGet = builder.apply(client().prepareSearch(index).setSize(0)).execute().actionGet();
         return actionGet;
     }
 
-    public SearchResponse search(final String index, final String type,
-            final QueryBuilder queryBuilder, final SortBuilder sort,
+    public SearchResponse search(final String index, final String type, final QueryBuilder queryBuilder, final SortBuilder sort,
             final int from, final int size) {
-        final SearchResponse actionGet = client()
-                .prepareSearch(index)
-                .setTypes(type)
-                .setQuery(
-                        queryBuilder != null ? queryBuilder : QueryBuilders
-                                .matchAllQuery())
-                .addSort(sort != null ? sort : SortBuilders.scoreSort())
-                .setFrom(from).setSize(size).execute().actionGet();
+        return search(index, new BuilderCallback<SearchRequestBuilder>() {
+            @Override
+            public SearchRequestBuilder apply(SearchRequestBuilder builder) {
+                return builder.setTypes(type).setQuery(queryBuilder != null ? queryBuilder : QueryBuilders.matchAllQuery())
+                        .addSort(sort != null ? sort : SortBuilders.scoreSort()).setFrom(from).setSize(size);
+            }
+        });
+    }
+
+    public SearchResponse search(final String index, final BuilderCallback<SearchRequestBuilder> builder) {
+        final SearchResponse actionGet = builder.apply(client().prepareSearch(index)).execute().actionGet();
         return actionGet;
     }
 
     public GetAliasesResponse getAlias(final String alias) {
-        final GetAliasesResponse actionGet = client().admin().indices()
-                .prepareGetAliases(alias).execute().actionGet();
+        return getAlias(alias, new BuilderCallback<GetAliasesRequestBuilder>() {
+            @Override
+            public GetAliasesRequestBuilder apply(GetAliasesRequestBuilder builder) {
+                return builder;
+            }
+        });
+    }
+
+    public GetAliasesResponse getAlias(final String alias, final BuilderCallback<GetAliasesRequestBuilder> builder) {
+        final GetAliasesResponse actionGet = builder.apply(client().admin().indices().prepareGetAliases(alias)).execute().actionGet();
         return actionGet;
     }
 
-    public IndicesAliasesResponse updateAlias(final String alias,
-            final String[] addedIndices, final String[] deletedIndices) {
-        final IndicesAliasesRequestBuilder builder = client().admin().indices()
-                .prepareAliases();
-        if (addedIndices != null && addedIndices.length > 0) {
-            builder.addAlias(addedIndices, alias);
-        }
-        if (deletedIndices != null && deletedIndices.length > 0) {
-            builder.removeAlias(deletedIndices, alias);
-        }
-        final IndicesAliasesResponse actionGet = builder.execute().actionGet();
+    public IndicesAliasesResponse updateAlias(final String alias, final String[] addedIndices, final String[] deletedIndices) {
+        return updateAlias(new BuilderCallback<IndicesAliasesRequestBuilder>() {
+            @Override
+            public IndicesAliasesRequestBuilder apply(IndicesAliasesRequestBuilder builder) {
+                if (addedIndices != null && addedIndices.length > 0) {
+                    builder.addAlias(addedIndices, alias);
+                }
+                if (deletedIndices != null && deletedIndices.length > 0) {
+                    builder.removeAlias(deletedIndices, alias);
+                }
+                return builder;
+            }
+        });
+    }
+
+    public IndicesAliasesResponse updateAlias(final BuilderCallback<IndicesAliasesRequestBuilder> builder) {
+        final IndicesAliasesResponse actionGet = builder.apply(client().admin().indices().prepareAliases()).execute().actionGet();
         if (!actionGet.isAcknowledged()) {
-            onFailure("Failed to update " + alias + ".", actionGet);
+            onFailure("Failed to update aliases.", actionGet);
         }
         return actionGet;
     }
@@ -919,7 +1027,6 @@ public class ElasticsearchClusterRunner {
     /**
      * This builder sets parameters to create a node
      *
-     * @author shinsuke
      */
     public interface Builder {
 
@@ -936,8 +1043,6 @@ public class ElasticsearchClusterRunner {
 
     /**
      * ElasticsearchClusterRunner configuration.
-     *
-     * @author shinsuke
      *
      */
     public static class Configs {
@@ -995,4 +1100,13 @@ public class ElasticsearchClusterRunner {
 
     }
 
+
+    /**
+     * Callback function.
+     *
+     * @param <T>
+     */
+    public interface BuilderCallback<T> {
+        T apply(T builder);
+    }
 }
