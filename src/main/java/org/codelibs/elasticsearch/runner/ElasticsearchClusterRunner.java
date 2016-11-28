@@ -95,13 +95,9 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     protected static final String ELASTICSEARCH_YAML = "elasticsearch.yml";
 
-    protected static final String WORK_DIR = "work";
-
     protected static final String DATA_DIR = "data";
 
     protected static final String LOGS_DIR = "logs";
-
-    protected static final String PLUGINS_DIR = "plugins";
 
     protected static final String CONFIG_DIR = "config";
 
@@ -312,17 +308,14 @@ public class ElasticsearchClusterRunner implements Closeable {
     protected Settings buildNodeSettings(final int number)
             throws IOException, UserException {
         final Path homePath = Paths.get(basePath);
-        final Path pluginsPath = Paths.get(basePath, PLUGINS_DIR);
         final Path confPath = Paths.get(basePath, CONFIG_DIR, "node_" + number);
         final Path logsPath = Paths.get(basePath, LOGS_DIR, "node_" + number);
         final Path dataPath = Paths.get(basePath, DATA_DIR, "node_" + number);
-        final Path workPath = Paths.get(basePath, WORK_DIR, "node_" + number);
 
         createDir(homePath);
         createDir(confPath);
         createDir(logsPath);
         createDir(dataPath);
-        createDir(workPath);
 
         final Settings.Builder settingsBuilder = builder();
 
@@ -336,12 +329,8 @@ public class ElasticsearchClusterRunner implements Closeable {
                 confPath.toAbsolutePath().toString());
         putIfAbsent(settingsBuilder, "path.data",
                 dataPath.toAbsolutePath().toString());
-        putIfAbsent(settingsBuilder, "path.work",
-                workPath.toAbsolutePath().toString());
         putIfAbsent(settingsBuilder, "path.logs",
                 logsPath.toAbsolutePath().toString());
-        putIfAbsent(settingsBuilder, "path.plugins",
-                pluginsPath.toAbsolutePath().toString());
 
         final Path esConfPath = confPath.resolve(ELASTICSEARCH_YAML);
         if (!Files.exists(esConfPath)) {
@@ -388,7 +377,14 @@ public class ElasticsearchClusterRunner implements Closeable {
         print("----------------------------------------");
 
         final Settings settings = settingsBuilder.build();
-        LogConfigurator.configure(new Environment(settings));
+        final Environment environment = new Environment(settings);
+        LogConfigurator.configure(environment);
+
+        createDir(environment.modulesFile());
+        createDir(environment.pluginsFile());
+
+        // TODO unzip modules
+
         return settings;
     }
 
