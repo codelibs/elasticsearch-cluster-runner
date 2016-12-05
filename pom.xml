@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.codelibs</groupId>
 	<artifactId>elasticsearch-cluster-runner</artifactId>
-	<version>5.0.1.0-SNAPSHOT</version>
+	<version>5.0.2.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>Elasticsearch Cluster Runner</name>
 	<inceptionYear>2011</inceptionYear>
@@ -25,7 +25,7 @@
 	</parent>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<elasticsearch.version>5.0.1</elasticsearch.version>
+		<elasticsearch.version>5.0.2</elasticsearch.version>
 		<lucene.version>6.2.1</lucene.version>
 		<log4j.version>2.6.2</log4j.version>
 	</properties>
@@ -90,6 +90,56 @@
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>aggs-matrix-stats</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>ingest-common</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>lang-expression</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>lang-groovy</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>lang-mustache</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>lang-painless</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>percolator</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>reindex</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>transport-netty3</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>transport-netty4</artifactId>
 			<version>${elasticsearch.version}</version>
 		</dependency>
 		<dependency>
