@@ -16,6 +16,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.logging.log4j.Logger;
@@ -67,6 +68,7 @@ import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.logging.LogConfigurator;
 import org.elasticsearch.common.logging.Loggers;
+import org.elasticsearch.common.network.NetworkModule;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.env.Environment;
@@ -74,6 +76,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeValidationException;
+import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.kohsuke.args4j.CmdLineException;
@@ -95,6 +98,18 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     protected static final String ELASTICSEARCH_YAML = "elasticsearch.yml";
 
+    public static String[] MODULE_TYPES = new String[] {
+            "org.elasticsearch.search.aggregations.matrix.MatrixAggregationPlugin",
+            "org.elasticsearch.ingest.common.IngestCommonPlugin",
+            "org.elasticsearch.script.expression.ExpressionPlugin",
+            "org.elasticsearch.script.groovy.GroovyPlugin",
+            "org.elasticsearch.script.mustache.MustachePlugin",
+            "org.elasticsearch.painless.PainlessPlugin",
+            "org.elasticsearch.percolator.PercolatorPlugin",
+            "org.elasticsearch.index.reindex.ReindexPlugin",
+            "org.elasticsearch.transport.Netty3Plugin",
+            "org.elasticsearch.transport.Netty4Plugin" };
+
     protected static final String DATA_DIR = "data";
 
     protected static final String LOGS_DIR = "logs";
@@ -104,6 +119,8 @@ public class ElasticsearchClusterRunner implements Closeable {
     protected List<Node> nodeList = new ArrayList<>();
 
     protected List<Settings> settingsList = new ArrayList<>();
+
+    protected Collection<Class<? extends Plugin>> pluginList= new ArrayList<>();
 
     protected int maxHttpPort = 9299;
 
@@ -132,6 +149,9 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     @Option(name = "-printOnFailure", usage = "Print an exception on a failure.")
     protected boolean printOnFailure = false;
+
+    @Option(name = "-pluginTypes", usage = "Plugin types.")
+    protected String pluginTypes;
 
     protected Builder builder;
 
@@ -285,6 +305,32 @@ public class ElasticsearchClusterRunner implements Closeable {
         final Path esBasePath = Paths.get(basePath);
         createDir(esBasePath);
 
+        for (final String moduleType : MODULE_TYPES) {
+            Class<? extends Plugin> clazz;
+            try {
+                clazz = Class.forName(moduleType).asSubclass(Plugin.class);
+                pluginList.add(clazz);
+            } catch (ClassNotFoundException e) {
+                logger.debug(moduleType + " is not found.", e);
+            }
+        }
+        if (pluginTypes != null) {
+            for (final String value : pluginTypes.split(",")) {
+                final String pluginType = value.trim();
+                if (pluginType.length() > 0) {
+                    Class<? extends Plugin> clazz;
+                    try {
+                        clazz = Class.forName(pluginType)
+                                .asSubclass(Plugin.class);
+                        pluginList.add(clazz);
+                    } catch (ClassNotFoundException e) {
+                        throw new ClusterRunnerException(
+                                pluginType + " is not found.", e);
+                    }
+                }
+            }
+        }
+
         print("----------------------------------------");
         print("Cluster Name: " + clusterName);
         print("Base Path:    " + basePath);
@@ -294,7 +340,7 @@ public class ElasticsearchClusterRunner implements Closeable {
         for (int i = 0; i < numOfNode; i++) {
             try {
                 final Settings settings = buildNodeSettings(i + 1);
-                final Node node = new ClusterRunnerNode(settings);
+                final Node node = new ClusterRunnerNode(settings, pluginList);
                 node.start();
                 nodeList.add(node);
                 settingsList.add(settings);
@@ -368,6 +414,7 @@ public class ElasticsearchClusterRunner implements Closeable {
                 String.valueOf(transportPort));
         putIfAbsent(settingsBuilder, "http.port", String.valueOf(httpPort));
         putIfAbsent(settingsBuilder, "index.store.type", indexStoreType);
+        putIfAbsent(settingsBuilder, NetworkModule.TRANSPORT_TYPE_DEFAULT_KEY, NetworkModule.LOCAL_TRANSPORT);
 
         print("Node Name:      " + nodeName);
         print("HTTP Port:      " + httpPort);
@@ -382,8 +429,6 @@ public class ElasticsearchClusterRunner implements Closeable {
 
         createDir(environment.modulesFile());
         createDir(environment.pluginsFile());
-
-        // TODO unzip modules
 
         return settings;
     }
@@ -468,7 +513,7 @@ public class ElasticsearchClusterRunner implements Closeable {
         if (!nodeList.get(i).isClosed()) {
             return false;
         }
-        final Node node = new ClusterRunnerNode(settingsList.get(i));
+        final Node node = new ClusterRunnerNode(settingsList.get(i), pluginList);
         try {
             node.start();
             nodeList.set(i, node);
@@ -1213,6 +1258,12 @@ public class ElasticsearchClusterRunner implements Closeable {
 
         public Configs printOnFailure() {
             configList.add("-printOnFailure");
+            return this;
+        }
+
+        public Configs pluginTypes(final String pluginTypes) {
+            configList.add("-pluginTypes");
+            configList.add(pluginTypes);
             return this;
         }
 
