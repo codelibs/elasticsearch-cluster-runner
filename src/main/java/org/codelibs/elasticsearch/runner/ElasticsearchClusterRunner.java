@@ -68,7 +68,6 @@ import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.logging.LogConfigurator;
 import org.elasticsearch.common.logging.Loggers;
-import org.elasticsearch.common.network.NetworkModule;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.env.Environment;
@@ -91,8 +90,11 @@ import org.kohsuke.args4j.ParserProperties;
  *
  */
 public class ElasticsearchClusterRunner implements Closeable {
+
     private static final Logger logger = Loggers
             .getLogger("codelibs.cluster.runner");
+
+    private static final String NODE_NAME = "node.name";
 
     protected static final String LOG4J2_PROPERTIES = "log4j2.properties";
 
@@ -406,7 +408,7 @@ public class ElasticsearchClusterRunner implements Closeable {
         final int transportPort = getAvailableTransportPort(number);
         final int httpPort = getAvailableHttpPort(number);
         putIfAbsent(settingsBuilder, "cluster.name", clusterName);
-        putIfAbsent(settingsBuilder, "node.name", nodeName);
+        putIfAbsent(settingsBuilder, NODE_NAME, nodeName);
         putIfAbsent(settingsBuilder, "node.master", String.valueOf(true));
         putIfAbsent(settingsBuilder, "node.data", String.valueOf(true));
         putIfAbsent(settingsBuilder, "http.enabled", String.valueOf(true));
@@ -414,7 +416,6 @@ public class ElasticsearchClusterRunner implements Closeable {
                 String.valueOf(transportPort));
         putIfAbsent(settingsBuilder, "http.port", String.valueOf(httpPort));
         putIfAbsent(settingsBuilder, "index.store.type", indexStoreType);
-        putIfAbsent(settingsBuilder, NetworkModule.TRANSPORT_TYPE_DEFAULT_KEY, NetworkModule.LOCAL_TRANSPORT);
 
         print("Node Name:      " + nodeName);
         print("HTTP Port:      " + httpPort);
@@ -535,7 +536,7 @@ public class ElasticsearchClusterRunner implements Closeable {
             return null;
         }
         for (final Node node : nodeList) {
-            if (name.equals(node.settings().get("name"))) {
+            if (name.equals(node.settings().get(NODE_NAME))) {
                 return node;
             }
         }
@@ -621,7 +622,7 @@ public class ElasticsearchClusterRunner implements Closeable {
                 .execute().actionGet().getState();
         final String name = state.nodes().getMasterNode().getName();
         for (final Node node : nodeList) {
-            if (!node.isClosed() && !name.equals(node.settings().get("name"))) {
+            if (!node.isClosed() && !name.equals(node.settings().get(NODE_NAME))) {
                 return node;
             }
         }
@@ -985,7 +986,7 @@ public class ElasticsearchClusterRunner implements Closeable {
                     public IndexRequestBuilder apply(
                             IndexRequestBuilder builder) {
                         return builder.setSource(source)
-                                .setRefreshPolicy(RefreshPolicy.WAIT_UNTIL);
+                                .setRefreshPolicy(RefreshPolicy.IMMEDIATE);
                     }
                 });
     }
@@ -1011,7 +1012,7 @@ public class ElasticsearchClusterRunner implements Closeable {
                     public DeleteRequestBuilder apply(
                             DeleteRequestBuilder builder) {
                         return builder
-                                .setRefreshPolicy(RefreshPolicy.WAIT_UNTIL);
+                                .setRefreshPolicy(RefreshPolicy.IMMEDIATE);
                     }
                 });
     }
