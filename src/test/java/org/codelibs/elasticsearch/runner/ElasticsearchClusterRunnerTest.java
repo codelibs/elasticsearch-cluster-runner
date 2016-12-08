@@ -6,6 +6,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
 import java.util.Map;
 
 import org.codelibs.elasticsearch.runner.net.Curl;
@@ -16,13 +17,16 @@ import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import junit.framework.TestCase;
 
@@ -199,31 +203,13 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         // upgrade
         runner.upgrade();
 
-        // node client
-        /* TODO
-        try (Node node = nodeBuilder()
-                .clusterName(clusterName).settings(Settings.builder()
-                        .put("http.enabled", false).put("path.home", System.getProperty("java.io.tmpdir")))
-                .client(true).node()) {
-            try (Client nodeClient = node.client()) {
-                final SearchResponse searchResponse = nodeClient
-                        .prepareSearch(index).setTypes(type)
-                        .setQuery(QueryBuilders.matchAllQuery()).execute()
-                        .actionGet();
-                assertEquals(999, searchResponse.getHits().getTotalHits());
-                assertEquals(10, searchResponse.getHits().hits().length);
-            }
-        }
-        */
-
         // transport client
-        /* TODO
         final Settings transportClientSettings = Settings.builder()
                 .put("cluster.name", runner.getClusterName()).build();
-        final int port = runner.node().settings()
-                .getAsInt("transport.tcp.port", 9300);
-        try (TransportClient client = TransportClient.builder()
-                .settings(transportClientSettings).build()) {
+        final int port = runner.node().settings().getAsInt("transport.tcp.port",
+                9300);
+        try (TransportClient client = new PreBuiltTransportClient(
+                transportClientSettings)) {
             client.addTransportAddress(new InetSocketTransportAddress(
                     new InetSocketAddress("localhost", port)));
             final SearchResponse searchResponse = client.prepareSearch(index)
@@ -232,7 +218,6 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
             assertEquals(999, searchResponse.getHits().getTotalHits());
             assertEquals(10, searchResponse.getHits().hits().length);
         }
-        */
 
         final Node node = runner.node();
 

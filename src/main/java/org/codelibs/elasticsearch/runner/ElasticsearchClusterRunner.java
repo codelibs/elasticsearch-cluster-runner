@@ -152,6 +152,9 @@ public class ElasticsearchClusterRunner implements Closeable {
     @Option(name = "-printOnFailure", usage = "Print an exception on a failure.")
     protected boolean printOnFailure = false;
 
+    @Option(name = "-moduleTypes", usage = "Module types.")
+    protected String moduleTypes;
+
     @Option(name = "-pluginTypes", usage = "Plugin types.")
     protected String pluginTypes;
 
@@ -307,7 +310,9 @@ public class ElasticsearchClusterRunner implements Closeable {
         final Path esBasePath = Paths.get(basePath);
         createDir(esBasePath);
 
-        for (final String moduleType : MODULE_TYPES) {
+        final String[] types = moduleTypes == null ? MODULE_TYPES
+                : moduleTypes.split(",");
+        for (final String moduleType : types) {
             Class<? extends Plugin> clazz;
             try {
                 clazz = Class.forName(moduleType).asSubclass(Plugin.class);
@@ -1048,7 +1053,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     }
 
     public SearchResponse search(final String index, final String type,
-            final QueryBuilder queryBuilder, final SortBuilder sort,
+            final QueryBuilder queryBuilder, final SortBuilder<?> sort,
             final int from, final int size) {
         return search(index, new BuilderCallback<SearchRequestBuilder>() {
             @Override
@@ -1259,6 +1264,12 @@ public class ElasticsearchClusterRunner implements Closeable {
 
         public Configs printOnFailure() {
             configList.add("-printOnFailure");
+            return this;
+        }
+
+        public Configs moduleTypes(final String moduleTypes) {
+            configList.add("-moduleTypes");
+            configList.add(moduleTypes);
             return this;
         }
 
