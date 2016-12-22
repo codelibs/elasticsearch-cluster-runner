@@ -13,6 +13,7 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -407,6 +408,30 @@ public class ElasticsearchClusterRunner implements Closeable {
                 throw new ClusterRunnerException(
                         "Could not create: " + logConfPath, e);
             }
+        }
+
+        final String pluginPath = settingsBuilder.get("path.plugins");
+        if (pluginPath != null) {
+            final Path sourcePath = Paths.get(pluginPath);
+            final Path targetPath = Paths.get(basePath, "plugins");
+            Files.walkFileTree(sourcePath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(final Path dir,
+                        final BasicFileAttributes attrs) throws IOException {
+                    Files.createDirectories(
+                            targetPath.resolve(sourcePath.relativize(dir)));
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(final Path file,
+                        final BasicFileAttributes attrs) throws IOException {
+                    Files.copy(file,
+                            targetPath.resolve(sourcePath.relativize(file)));
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            settingsBuilder.remove("path.plugins");
         }
 
         final String nodeName = "Node " + number;
