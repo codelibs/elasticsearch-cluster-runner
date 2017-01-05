@@ -692,9 +692,8 @@ public class ElasticsearchClusterRunner implements Closeable {
         if (actionGet.isTimedOut()) {
             onFailure("ensureGreen timed out, cluster state:\n"
                     + client().admin().cluster().prepareState().get().getState()
-                            .prettyPrint()
                     + "\n" + client().admin().cluster()
-                            .preparePendingClusterTasks().get().prettyPrint(),
+                            .preparePendingClusterTasks().get(),
                     actionGet);
         }
         return actionGet.getStatus();
@@ -715,9 +714,8 @@ public class ElasticsearchClusterRunner implements Closeable {
         if (actionGet.isTimedOut()) {
             onFailure("ensureYellow timed out, cluster state:\n" + "\n"
                     + client().admin().cluster().prepareState().get().getState()
-                            .prettyPrint()
                     + "\n" + client().admin().cluster()
-                            .preparePendingClusterTasks().get().prettyPrint(),
+                            .preparePendingClusterTasks().get(),
                     actionGet);
         }
         return actionGet.getStatus();
@@ -731,9 +729,8 @@ public class ElasticsearchClusterRunner implements Closeable {
         if (actionGet.isTimedOut()) {
             onFailure("waitForRelocation timed out, cluster state:\n" + "\n"
                     + client().admin().cluster().prepareState().get().getState()
-                            .prettyPrint()
                     + "\n" + client().admin().cluster()
-                            .preparePendingClusterTasks().get().prettyPrint(),
+                            .preparePendingClusterTasks().get(),
                     actionGet);
         }
         return actionGet.getStatus();

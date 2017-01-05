@@ -25,9 +25,9 @@
 	</parent>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<elasticsearch.version>5.0.2</elasticsearch.version>
-		<lucene.version>6.2.1</lucene.version>
-		<log4j.version>2.6.2</log4j.version>
+		<elasticsearch.version>5.1.1</elasticsearch.version>
+		<lucene.version>6.3.0</lucene.version>
+		<log4j.version>2.7</log4j.version>
 		<slf4j.version>1.7.22</slf4j.version>
 	</properties>
 	<build>
