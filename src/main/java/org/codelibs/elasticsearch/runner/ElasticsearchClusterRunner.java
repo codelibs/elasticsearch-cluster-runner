@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.logging.log4j.Logger;
 import org.codelibs.elasticsearch.runner.node.ClusterRunnerNode;
 import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.action.DocWriteResponse.Result;
@@ -68,7 +67,6 @@ import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.logging.LogConfigurator;
-import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.env.Environment;
@@ -83,6 +81,8 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.kohsuke.args4j.ParserProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ElasticsearchClusterRunner manages multiple Elasticsearch instances.
@@ -92,7 +92,7 @@ import org.kohsuke.args4j.ParserProperties;
  */
 public class ElasticsearchClusterRunner implements Closeable {
 
-    private static final Logger logger = Loggers
+    private static final Logger logger = LoggerFactory
             .getLogger("codelibs.cluster.runner");
 
     private static final String NODE_NAME = "node.name";
