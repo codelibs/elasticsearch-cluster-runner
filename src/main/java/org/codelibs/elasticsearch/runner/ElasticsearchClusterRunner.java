@@ -150,6 +150,9 @@ public class ElasticsearchClusterRunner implements Closeable {
     @Option(name = "-useLogger", usage = "Print logs to a logger.")
     protected boolean useLogger = false;
 
+    @Option(name = "-disableESLogger", usage = "Disable ESLogger.")
+    protected boolean disableESLogger = false;
+
     @Option(name = "-printOnFailure", usage = "Print an exception on a failure.")
     protected boolean printOnFailure = false;
 
@@ -398,15 +401,18 @@ public class ElasticsearchClusterRunner implements Closeable {
             }
         }
 
-        final Path logConfPath = confPath.resolve(LOG4J2_PROPERTIES);
-        if (!Files.exists(logConfPath)) {
-            try (InputStream is = Thread.currentThread().getContextClassLoader()
-                    .getResourceAsStream(CONFIG_DIR + "/" + LOG4J2_PROPERTIES)) {
-                Files.copy(is, logConfPath,
-                        StandardCopyOption.REPLACE_EXISTING);
-            } catch (final IOException e) {
-                throw new ClusterRunnerException(
-                        "Could not create: " + logConfPath, e);
+        if (!disableESLogger) {
+            final Path logConfPath = confPath.resolve(LOG4J2_PROPERTIES);
+            if (!Files.exists(logConfPath)) {
+                try (InputStream is = Thread.currentThread()
+                        .getContextClassLoader().getResourceAsStream(
+                                CONFIG_DIR + "/" + LOG4J2_PROPERTIES)) {
+                    Files.copy(is, logConfPath,
+                            StandardCopyOption.REPLACE_EXISTING);
+                } catch (final IOException e) {
+                    throw new ClusterRunnerException(
+                            "Could not create: " + logConfPath, e);
+                }
             }
         }
 
@@ -456,8 +462,9 @@ public class ElasticsearchClusterRunner implements Closeable {
 
         final Settings settings = settingsBuilder.build();
         final Environment environment = new Environment(settings);
-        LogConfigurator.configure(environment);
-
+        if (!disableESLogger) {
+            LogConfigurator.configure(environment);
+        }
         createDir(environment.modulesFile());
         createDir(environment.pluginsFile());
 
@@ -1281,6 +1288,11 @@ public class ElasticsearchClusterRunner implements Closeable {
 
         public Configs useLogger() {
             configList.add("-useLogger");
+            return this;
+        }
+
+        public Configs disableESLogger() {
+            configList.add("-disableESLogger");
             return this;
         }
 
