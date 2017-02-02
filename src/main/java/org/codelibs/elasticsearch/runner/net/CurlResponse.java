@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
+import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 
 public class CurlResponse implements Closeable {
@@ -31,7 +32,7 @@ public class CurlResponse implements Closeable {
 
     public Map<String, Object> getContentAsMap() {
         try (InputStream is = getContentAsStream()) {
-            return JsonXContent.jsonXContent.createParser(is).map();
+            return JsonXContent.jsonXContent.createParser(NamedXContentRegistry.EMPTY, is).map();
         } catch (final Exception e) {
             throw new CurlException("Failed to access the content.", e);
         }
