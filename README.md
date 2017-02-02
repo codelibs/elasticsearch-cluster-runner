@@ -2,6 +2,7 @@ Elasticsearch Cluster Runner
 ============================
 
 This project runs Elasticsearch cluster on one JVM instance for your development/testing easily.
+You can use Elasticsearch Cluster Runner as Embedded Elasticsearch in your application.
 
 ## Version
 
