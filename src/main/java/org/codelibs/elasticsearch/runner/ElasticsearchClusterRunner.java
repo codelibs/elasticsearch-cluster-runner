@@ -145,7 +145,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     protected String clusterName = "elasticsearch-cluster-runner";
 
     @Option(name = "-indexStoreType", usage = "Index store type.")
-    protected String indexStoreType = "default";
+    protected String indexStoreType = "fs";
 
     @Option(name = "-useLogger", usage = "Print logs to a logger.")
     protected boolean useLogger = false;
