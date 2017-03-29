@@ -69,6 +69,7 @@ import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.logging.LogConfigurator;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -983,7 +984,8 @@ public class ElasticsearchClusterRunner implements Closeable {
                     @Override
                     public PutMappingRequestBuilder apply(
                             PutMappingRequestBuilder builder) {
-                        return builder.setType(type).setSource(mappingSource);
+                        return builder.setType(type).setSource(mappingSource,
+                                XContentFactory.xContentType(mappingSource));
                     }
                 });
     }
@@ -1019,7 +1021,9 @@ public class ElasticsearchClusterRunner implements Closeable {
                     @Override
                     public IndexRequestBuilder apply(
                             IndexRequestBuilder builder) {
-                        return builder.setSource(source)
+                        return builder
+                                .setSource(source,
+                                        XContentFactory.xContentType(source))
                                 .setRefreshPolicy(RefreshPolicy.IMMEDIATE);
                     }
                 });

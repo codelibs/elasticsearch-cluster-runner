@@ -5,7 +5,7 @@ import java.util.Collection;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.internal.InternalSettingsPreparer;
+import org.elasticsearch.node.InternalSettingsPreparer;
 import org.elasticsearch.plugins.Plugin;
 
 public class ClusterRunnerNode extends Node {
