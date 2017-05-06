@@ -165,9 +165,9 @@
 			<optional>true</optional>
 		</dependency>
 		<dependency>
-			<groupId>net.java.dev.jna</groupId>
+			<groupId>org.elasticsearch</groupId>
 			<artifactId>jna</artifactId>
-			<version>4.2.2</version>
+			<version>4.4.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
