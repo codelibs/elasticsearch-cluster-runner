@@ -168,6 +168,7 @@
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>jna</artifactId>
 			<version>4.4.0</version>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
