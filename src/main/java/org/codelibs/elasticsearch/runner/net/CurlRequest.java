@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.Proxy;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.file.Files;
@@ -22,6 +23,8 @@ import org.elasticsearch.node.Node;
 
 public class CurlRequest {
     protected String url;
+
+    protected Proxy proxy;
 
     protected String encoding = "UTF-8";
 
@@ -53,6 +56,10 @@ public class CurlRequest {
         url = urlBuf.toString();
     }
 
+    public Proxy proxy() {
+        return proxy;
+    }
+
     public String encoding() {
         return encoding;
     }
@@ -63,6 +70,11 @@ public class CurlRequest {
 
     public String body() {
         return body;
+    }
+
+    public CurlRequest proxy(final Proxy proxy) {
+        this.proxy = proxy;
+        return this;
     }
 
     public CurlRequest encoding(final String encoding) {
@@ -120,7 +132,9 @@ public class CurlRequest {
 
         HttpURLConnection connection = null;
         try {
-            connection = (HttpURLConnection) new URL(url).openConnection();
+            URL u = new URL(url);
+            connection = (HttpURLConnection) (proxy != null
+                    ? u.openConnection(proxy) : u.openConnection());
             connection.setRequestMethod(method.toString());
             if (headerList != null) {
                 for (String[] values : headerList) {
