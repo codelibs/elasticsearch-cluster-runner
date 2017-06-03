@@ -170,7 +170,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
             final SearchResponse searchResponse = runner.search(index, type,
                     null, null, 0, 10);
             assertEquals(1000, searchResponse.getHits().getTotalHits());
-            assertEquals(10, searchResponse.getHits().hits().length);
+            assertEquals(10, searchResponse.getHits().getHits().length);
         }
 
         {
@@ -178,7 +178,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                     QueryBuilders.matchAllQuery(),
                     SortBuilders.fieldSort("id"), 0, 10);
             assertEquals(1000, searchResponse.getHits().getTotalHits());
-            assertEquals(10, searchResponse.getHits().hits().length);
+            assertEquals(10, searchResponse.getHits().getHits().length);
         }
 
         {
@@ -194,7 +194,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
             final SearchResponse searchResponse = runner.search(index, type,
                     null, null, 0, 10);
             assertEquals(999, searchResponse.getHits().getTotalHits());
-            assertEquals(10, searchResponse.getHits().hits().length);
+            assertEquals(10, searchResponse.getHits().getHits().length);
         }
 
         // optimize
@@ -216,7 +216,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                     .setTypes(type).setQuery(QueryBuilders.matchAllQuery())
                     .execute().actionGet();
             assertEquals(999, searchResponse.getHits().getTotalHits());
-            assertEquals(10, searchResponse.getHits().hits().length);
+            assertEquals(10, searchResponse.getHits().getHits().length);
         }
 
         final Node node = runner.node();
