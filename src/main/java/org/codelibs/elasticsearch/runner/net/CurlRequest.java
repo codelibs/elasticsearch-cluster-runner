@@ -132,12 +132,12 @@ public class CurlRequest {
 
         HttpURLConnection connection = null;
         try {
-            URL u = new URL(url);
+            final URL u = new URL(url);
             connection = (HttpURLConnection) (proxy != null
                     ? u.openConnection(proxy) : u.openConnection());
             connection.setRequestMethod(method.toString());
             if (headerList != null) {
-                for (String[] values : headerList) {
+                for (final String[] values : headerList) {
                     connection.addRequestProperty(values[0], values[1]);
                 }
             }
@@ -172,21 +172,11 @@ public class CurlRequest {
                 try {
                     response.setEncoding(encoding);
                     response.setHttpStatusCode(con.getResponseCode());
-                    writeContent(new InputStreamHandler() {
-                        @Override
-                        public InputStream open() throws IOException {
-                            return con.getInputStream();
-                        }
-                    });
+                    writeContent(() -> con.getInputStream());
                 } catch (final Exception e) {
                     final InputStream errorStream = con.getErrorStream();
                     if (errorStream != null) {
-                        writeContent(new InputStreamHandler() {
-                            @Override
-                            public InputStream open() throws IOException {
-                                return errorStream;
-                            }
-                        });
+                        writeContent(() -> errorStream);
                         // overwrite
                         response.setContentException(e);
                     } else {
@@ -200,7 +190,7 @@ public class CurlRequest {
                 final Path tempFile;
                 try {
                     tempFile = Files.createTempFile("esrunner-", ".tmp");
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     throw new CurlException(
                             "Failed to create a temporary file.", e);
                 }

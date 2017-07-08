@@ -172,7 +172,7 @@ public class ElasticsearchClusterRunner implements Closeable {
             public void run() {
                 try {
                     runner.close();
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     runner.print(e.getLocalizedMessage());
                 }
             }
@@ -211,7 +211,7 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     /**
      * Close a cluster runner.
-     * @throws IOException 
+     * @throws IOException
      */
     @Override
     public void close() throws IOException {
@@ -322,7 +322,7 @@ public class ElasticsearchClusterRunner implements Closeable {
             try {
                 clazz = Class.forName(moduleType).asSubclass(Plugin.class);
                 pluginList.add(clazz);
-            } catch (ClassNotFoundException e) {
+            } catch (final ClassNotFoundException e) {
                 logger.debug(moduleType + " is not found.", e);
             }
         }
@@ -335,7 +335,7 @@ public class ElasticsearchClusterRunner implements Closeable {
                         clazz = Class.forName(pluginType)
                                 .asSubclass(Plugin.class);
                         pluginList.add(clazz);
-                    } catch (ClassNotFoundException e) {
+                    } catch (final ClassNotFoundException e) {
                         throw new ClusterRunnerException(
                                 pluginType + " is not found.", e);
                     }
@@ -391,7 +391,7 @@ public class ElasticsearchClusterRunner implements Closeable {
                 logsPath.toAbsolutePath().toString());
 
         final Path esConfPath = confPath.resolve(ELASTICSEARCH_YAML);
-        if (!Files.exists(esConfPath)) {
+        if (!esConfPath.toFile().exists()) {
             try (InputStream is = Thread.currentThread().getContextClassLoader()
                     .getResourceAsStream(
                             CONFIG_DIR + "/" + ELASTICSEARCH_YAML)) {
@@ -404,7 +404,7 @@ public class ElasticsearchClusterRunner implements Closeable {
 
         if (!disableESLogger) {
             final Path logConfPath = confPath.resolve(LOG4J2_PROPERTIES);
-            if (!Files.exists(logConfPath)) {
+            if (!logConfPath.toFile().exists()) {
                 try (InputStream is = Thread.currentThread()
                         .getContextClassLoader().getResourceAsStream(
                                 CONFIG_DIR + "/" + LOG4J2_PROPERTIES)) {
@@ -558,7 +558,7 @@ public class ElasticsearchClusterRunner implements Closeable {
             node.start();
             nodeList.set(i, node);
             return true;
-        } catch (NodeValidationException e) {
+        } catch (final NodeValidationException e) {
             print(e.getLocalizedMessage());
         }
         return false;
@@ -615,7 +615,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     }
 
     protected void createDir(final Path path) {
-        if (!Files.exists(path)) {
+        if (!path.toFile().exists()) {
             print("Creating " + path);
             try {
                 Files.createDirectories(path);
@@ -750,12 +750,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     }
 
     public FlushResponse flush(final boolean force) {
-        return flush(new BuilderCallback<FlushRequestBuilder>() {
-            @Override
-            public FlushRequestBuilder apply(FlushRequestBuilder builder) {
-                return builder.setWaitIfOngoing(true).setForce(force);
-            }
-        });
+        return flush(builder -> builder.setWaitIfOngoing(true).setForce(force));
     }
 
     public FlushResponse flush(
@@ -767,8 +762,8 @@ public class ElasticsearchClusterRunner implements Closeable {
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
-            StringBuilder buf = new StringBuilder(100);
-            for (ShardOperationFailedException shardFailure : shardFailures) {
+            final StringBuilder buf = new StringBuilder(100);
+            for (final ShardOperationFailedException shardFailure : shardFailures) {
                 buf.append(shardFailure.toString()).append('\n');
             }
             onFailure(buf.toString(), actionGet);
@@ -777,12 +772,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     }
 
     public RefreshResponse refresh() {
-        return refresh(new BuilderCallback<RefreshRequestBuilder>() {
-            @Override
-            public RefreshRequestBuilder apply(RefreshRequestBuilder builder) {
-                return builder;
-            }
-        });
+        return refresh(builder -> builder);
     }
 
     public RefreshResponse refresh(
@@ -794,8 +784,8 @@ public class ElasticsearchClusterRunner implements Closeable {
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
-            StringBuilder buf = new StringBuilder(100);
-            for (ShardOperationFailedException shardFailure : shardFailures) {
+            final StringBuilder buf = new StringBuilder(100);
+            for (final ShardOperationFailedException shardFailure : shardFailures) {
                 buf.append(shardFailure.toString()).append('\n');
             }
             onFailure(buf.toString(), actionGet);
@@ -808,13 +798,8 @@ public class ElasticsearchClusterRunner implements Closeable {
     }
 
     public UpgradeResponse upgrade(final boolean upgradeOnlyAncientSegments) {
-        return upgrade(new BuilderCallback<UpgradeRequestBuilder>() {
-            @Override
-            public UpgradeRequestBuilder apply(UpgradeRequestBuilder builder) {
-                return builder.setUpgradeOnlyAncientSegments(
-                        upgradeOnlyAncientSegments);
-            }
-        });
+        return upgrade(builder -> builder.setUpgradeOnlyAncientSegments(
+                upgradeOnlyAncientSegments));
     }
 
     public UpgradeResponse upgrade(
@@ -826,8 +811,8 @@ public class ElasticsearchClusterRunner implements Closeable {
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
-            StringBuilder buf = new StringBuilder(100);
-            for (ShardOperationFailedException shardFailure : shardFailures) {
+            final StringBuilder buf = new StringBuilder(100);
+            for (final ShardOperationFailedException shardFailure : shardFailures) {
                 buf.append(shardFailure.toString()).append('\n');
             }
             onFailure(buf.toString(), actionGet);
@@ -841,15 +826,9 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     public ForceMergeResponse forceMerge(final int maxNumSegments,
             final boolean onlyExpungeDeletes, final boolean flush) {
-        return forceMerge(new BuilderCallback<ForceMergeRequestBuilder>() {
-            @Override
-            public ForceMergeRequestBuilder apply(
-                    ForceMergeRequestBuilder builder) {
-                return builder.setMaxNumSegments(maxNumSegments)
-                        .setOnlyExpungeDeletes(onlyExpungeDeletes)
-                        .setFlush(flush);
-            }
-        });
+        return forceMerge(builder -> builder.setMaxNumSegments(maxNumSegments)
+                .setOnlyExpungeDeletes(onlyExpungeDeletes)
+                .setFlush(flush));
     }
 
     public ForceMergeResponse forceMerge(
@@ -861,8 +840,8 @@ public class ElasticsearchClusterRunner implements Closeable {
         final ShardOperationFailedException[] shardFailures = actionGet
                 .getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
-            StringBuilder buf = new StringBuilder(100);
-            for (ShardOperationFailedException shardFailure : shardFailures) {
+            final StringBuilder buf = new StringBuilder(100);
+            for (final ShardOperationFailedException shardFailure : shardFailures) {
                 buf.append(shardFailure.toString()).append('\n');
             }
             onFailure(buf.toString(), actionGet);
@@ -871,13 +850,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     }
 
     public OpenIndexResponse openIndex(final String index) {
-        return openIndex(index, new BuilderCallback<OpenIndexRequestBuilder>() {
-            @Override
-            public OpenIndexRequestBuilder apply(
-                    OpenIndexRequestBuilder builder) {
-                return builder;
-            }
-        });
+        return openIndex(index, builder -> builder);
     }
 
     public OpenIndexResponse openIndex(final String index,
@@ -893,13 +866,7 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     public CloseIndexResponse closeIndex(final String index) {
         return closeIndex(index,
-                new BuilderCallback<CloseIndexRequestBuilder>() {
-                    @Override
-                    public CloseIndexRequestBuilder apply(
-                            CloseIndexRequestBuilder builder) {
-                        return builder;
-                    }
-                });
+                builder -> builder);
     }
 
     public CloseIndexResponse closeIndex(final String index,
@@ -916,14 +883,8 @@ public class ElasticsearchClusterRunner implements Closeable {
     public CreateIndexResponse createIndex(final String index,
             final Settings settings) {
         return createIndex(index,
-                new BuilderCallback<CreateIndexRequestBuilder>() {
-                    @Override
-                    public CreateIndexRequestBuilder apply(
-                            CreateIndexRequestBuilder builder) {
-                        return builder.setSettings(settings != null ? settings
-                                : Settings.Builder.EMPTY_SETTINGS);
-                    }
-                });
+                builder -> builder.setSettings(settings != null ? settings
+                        : Settings.Builder.EMPTY_SETTINGS));
     }
 
     public CreateIndexResponse createIndex(final String index,
@@ -939,13 +900,7 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     public boolean indexExists(final String index) {
         return indexExists(index,
-                new BuilderCallback<IndicesExistsRequestBuilder>() {
-                    @Override
-                    public IndicesExistsRequestBuilder apply(
-                            IndicesExistsRequestBuilder builder) {
-                        return builder;
-                    }
-                });
+                builder -> builder);
     }
 
     public boolean indexExists(final String index,
@@ -958,13 +913,7 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     public DeleteIndexResponse deleteIndex(final String index) {
         return deleteIndex(index,
-                new BuilderCallback<DeleteIndexRequestBuilder>() {
-                    @Override
-                    public DeleteIndexRequestBuilder apply(
-                            DeleteIndexRequestBuilder builder) {
-                        return builder;
-                    }
-                });
+                builder -> builder);
     }
 
     public DeleteIndexResponse deleteIndex(final String index,
@@ -981,26 +930,14 @@ public class ElasticsearchClusterRunner implements Closeable {
     public PutMappingResponse createMapping(final String index,
             final String type, final String mappingSource) {
         return createMapping(index,
-                new BuilderCallback<PutMappingRequestBuilder>() {
-                    @Override
-                    public PutMappingRequestBuilder apply(
-                            PutMappingRequestBuilder builder) {
-                        return builder.setType(type).setSource(mappingSource,
-                                XContentFactory.xContentType(mappingSource));
-                    }
-                });
+                builder -> builder.setType(type).setSource(mappingSource,
+                        XContentFactory.xContentType(mappingSource)));
     }
 
     public PutMappingResponse createMapping(final String index,
             final String type, final XContentBuilder source) {
         return createMapping(index,
-                new BuilderCallback<PutMappingRequestBuilder>() {
-                    @Override
-                    public PutMappingRequestBuilder apply(
-                            PutMappingRequestBuilder builder) {
-                        return builder.setType(type).setSource(source);
-                    }
-                });
+                builder -> builder.setType(type).setSource(source));
     }
 
     public PutMappingResponse createMapping(final String index,
@@ -1018,16 +955,10 @@ public class ElasticsearchClusterRunner implements Closeable {
     public IndexResponse insert(final String index, final String type,
             final String id, final String source) {
         return insert(index, type, id,
-                new BuilderCallback<IndexRequestBuilder>() {
-                    @Override
-                    public IndexRequestBuilder apply(
-                            IndexRequestBuilder builder) {
-                        return builder
-                                .setSource(source,
-                                        XContentFactory.xContentType(source))
-                                .setRefreshPolicy(RefreshPolicy.IMMEDIATE);
-                    }
-                });
+                builder -> builder
+                        .setSource(source,
+                                XContentFactory.xContentType(source))
+                        .setRefreshPolicy(RefreshPolicy.IMMEDIATE));
     }
 
     public IndexResponse insert(final String index, final String type,
@@ -1046,14 +977,8 @@ public class ElasticsearchClusterRunner implements Closeable {
     public DeleteResponse delete(final String index, final String type,
             final String id) {
         return delete(index, type, id,
-                new BuilderCallback<DeleteRequestBuilder>() {
-                    @Override
-                    public DeleteRequestBuilder apply(
-                            DeleteRequestBuilder builder) {
-                        return builder
-                                .setRefreshPolicy(RefreshPolicy.IMMEDIATE);
-                    }
-                });
+                builder -> builder
+                        .setRefreshPolicy(RefreshPolicy.IMMEDIATE));
     }
 
     public DeleteResponse delete(final String index, final String type,
@@ -1070,77 +995,53 @@ public class ElasticsearchClusterRunner implements Closeable {
     }
 
     public SearchResponse count(final String index, final String type) {
-        return count(index, new BuilderCallback<SearchRequestBuilder>() {
-            @Override
-            public SearchRequestBuilder apply(SearchRequestBuilder builder) {
-                return builder.setTypes(type);
-            }
-        });
+        return count(index, builder -> builder.setTypes(type));
     }
 
     public SearchResponse count(final String index,
             final BuilderCallback<SearchRequestBuilder> builder) {
-        final SearchResponse actionGet = builder
-                .apply(client().prepareSearch(index).setSize(0)).execute()
+        return builder.apply(client().prepareSearch(index).setSize(0)).execute()
                 .actionGet();
-        return actionGet;
     }
 
     public SearchResponse search(final String index, final String type,
             final QueryBuilder queryBuilder, final SortBuilder<?> sort,
             final int from, final int size) {
-        return search(index, new BuilderCallback<SearchRequestBuilder>() {
-            @Override
-            public SearchRequestBuilder apply(SearchRequestBuilder builder) {
-                return builder.setTypes(type)
-                        .setQuery(queryBuilder != null ? queryBuilder
-                                : QueryBuilders.matchAllQuery())
-                        .addSort(sort != null ? sort : SortBuilders.scoreSort())
-                        .setFrom(from).setSize(size);
-            }
-        });
+        return search(index, builder -> builder.setTypes(type)
+                .setQuery(queryBuilder != null ? queryBuilder
+                        : QueryBuilders.matchAllQuery())
+                .addSort(sort != null ? sort : SortBuilders.scoreSort())
+                .setFrom(from).setSize(size));
     }
 
     public SearchResponse search(final String index,
             final BuilderCallback<SearchRequestBuilder> builder) {
-        final SearchResponse actionGet = builder
-                .apply(client().prepareSearch(index)).execute().actionGet();
-        return actionGet;
+        return builder.apply(client().prepareSearch(index)).execute()
+                .actionGet();
     }
 
     public GetAliasesResponse getAlias(final String alias) {
-        return getAlias(alias, new BuilderCallback<GetAliasesRequestBuilder>() {
-            @Override
-            public GetAliasesRequestBuilder apply(
-                    GetAliasesRequestBuilder builder) {
-                return builder;
-            }
-        });
+        return getAlias(alias, builder -> builder);
     }
 
     public GetAliasesResponse getAlias(final String alias,
             final BuilderCallback<GetAliasesRequestBuilder> builder) {
-        final GetAliasesResponse actionGet = builder
+        return builder
                 .apply(client().admin().indices().prepareGetAliases(alias))
                 .execute().actionGet();
-        return actionGet;
     }
 
     public IndicesAliasesResponse updateAlias(final String alias,
             final String[] addedIndices, final String[] deletedIndices) {
-        return updateAlias(new BuilderCallback<IndicesAliasesRequestBuilder>() {
-            @Override
-            public IndicesAliasesRequestBuilder apply(
-                    IndicesAliasesRequestBuilder builder) {
-                if (addedIndices != null && addedIndices.length > 0) {
-                    builder.addAlias(addedIndices, alias);
-                }
-                if (deletedIndices != null && deletedIndices.length > 0) {
-                    builder.removeAlias(deletedIndices, alias);
-                }
-                return builder;
+        return updateAlias(builder -> {
+            if (addedIndices != null && addedIndices.length > 0) {
+        builder.addAlias(addedIndices, alias);
             }
-        });
+            if (deletedIndices != null && deletedIndices.length > 0) {
+        builder.removeAlias(deletedIndices, alias);
+            }
+            return builder;
+         });
     }
 
     public IndicesAliasesResponse updateAlias(
@@ -1177,7 +1078,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     }
 
     private final static class CleanUpFileVisitor implements FileVisitor<Path> {
-        private List<Throwable> errorList = new ArrayList<>();
+        private final List<Throwable> errorList = new ArrayList<>();
 
         @Override
         public FileVisitResult preVisitDirectory(final Path dir,
@@ -1211,7 +1112,7 @@ public class ElasticsearchClusterRunner implements Closeable {
                 final IOException exc) throws IOException {
             if (exc == null) {
                 Files.delete(dir);
-                if (Files.exists(dir)) {
+                if (dir.toFile().exists()) {
                     errorList.add(new IOException("Failed to delete " + dir));
                     dir.toFile().deleteOnExit();
                 }
@@ -1223,7 +1124,7 @@ public class ElasticsearchClusterRunner implements Closeable {
 
         private FileVisitResult checkIfExist(final Path path)
                 throws IOException {
-            if (Files.exists(path)) {
+            if (path.toFile().exists()) {
                 errorList.add(new IOException("Failed to delete " + path));
                 path.toFile().deleteOnExit();
             }
