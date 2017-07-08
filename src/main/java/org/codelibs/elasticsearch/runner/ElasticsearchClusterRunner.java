@@ -464,6 +464,7 @@ public class ElasticsearchClusterRunner implements Closeable {
         final Settings settings = settingsBuilder.build();
         final Environment environment = new Environment(settings);
         if (!disableESLogger) {
+            LogConfigurator.registerErrorListener();
             LogConfigurator.configure(environment);
         }
         createDir(environment.modulesFile());
