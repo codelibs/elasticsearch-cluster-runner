@@ -8,7 +8,9 @@ You can use Elasticsearch Cluster Runner as Embedded Elasticsearch in your appli
 
 | Version  | elasticsearch |
 |:--------:|:-------------:|
-| master   | 5.3.x         |
+| master   | 5.5.x         |
+| 5.5.1.0  | 5.5.1         |
+| 5.4.2.0  | 5.4.2         |
 | 5.3.2.0  | 5.3.2         |
 | 5.2.2.0  | 5.2.2         |
 | 5.1.1.0  | 5.1.1         |
@@ -32,7 +34,7 @@ Put elasticsearch-cluster-runner if using Maven:
     <dependency>
         <groupId>org.codelibs</groupId>
         <artifactId>elasticsearch-cluster-runner</artifactId>
-        <version>5.3.2.0</version>
+        <version>5.5.1.0</version>
     </dependency>
 
 ### Start Cluster Runner
@@ -69,7 +71,7 @@ Put elasticsearch-cluster-runner as test scope:
     <dependency>
         <groupId>org.codelibs</groupId>
         <artifactId>elasticsearch-cluster-runner</artifactId>
-        <version>5.0.2.0</version>
+        <version>5.5.1.0</version>
         <scope>test</scope>
     </dependency>
 
