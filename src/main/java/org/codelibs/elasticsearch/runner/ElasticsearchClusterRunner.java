@@ -6,7 +6,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -17,8 +19,10 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.codelibs.elasticsearch.runner.node.ClusterRunnerNode;
 import org.elasticsearch.action.ActionResponse;
@@ -61,6 +65,7 @@ import org.elasticsearch.cli.UserException;
 import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.cluster.service.ClusterService;
@@ -68,6 +73,7 @@ import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.logging.LogConfigurator;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.env.Environment;
@@ -78,6 +84,7 @@ import org.elasticsearch.node.NodeValidationException;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -165,6 +172,10 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     protected Builder builder;
 
+    private Process process = null;
+
+    private TransportClient transportClient;
+
     public static void main(final String[] args) {
         final ElasticsearchClusterRunner runner = new ElasticsearchClusterRunner();
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -215,23 +226,37 @@ public class ElasticsearchClusterRunner implements Closeable {
      */
     @Override
     public void close() throws IOException {
-        final List<IOException> exceptionList = new ArrayList<>();
-        for (final Node node : nodeList) {
-            try {
-                node.close();
-            } catch (final IOException e) {
-                exceptionList.add(e);
-            }
-        }
-        if (exceptionList.isEmpty()) {
-            print("Closed all nodes.");
-        } else {
-            if (useLogger && logger.isDebugEnabled()) {
-                for (final Exception e : exceptionList) {
-                    logger.debug("Failed to close a node.", e);
+        if (process == null) {
+            final List<IOException> exceptionList = new ArrayList<>();
+            for (final Node node : nodeList) {
+                try {
+                    node.close();
+                } catch (final IOException e) {
+                    exceptionList.add(e);
                 }
             }
-            throw new IOException(exceptionList.toString());
+            if (exceptionList.isEmpty()) {
+                print("Closed all nodes.");
+            } else {
+                if (useLogger && logger.isDebugEnabled()) {
+                    for (final Exception e : exceptionList) {
+                        logger.debug("Failed to close a node.", e);
+                    }
+                }
+                throw new IOException(exceptionList.toString());
+            }
+        } else {
+            try {
+                process.destroyForcibly().waitFor(15, TimeUnit.SECONDS);
+                final int exitValue = process.exitValue();
+                if (exitValue == 0) {
+                    print("Closed all nodes.");
+                } else {
+                    print("Failed to close nodes (" + exitValue + ").");
+                }
+            } catch (final Exception e) {
+                logger.error("Could not destroy a process correctly.", e);
+            }
         }
     }
 
@@ -239,6 +264,10 @@ public class ElasticsearchClusterRunner implements Closeable {
      * Delete all configuration files and directories.
      */
     public void clean() {
+        if (basePath == null) {
+            print("basePath is empty.");
+            return;
+        }
         final Path bPath = FileSystems.getDefault().getPath(basePath);
         for (int i = 0; i < 3; i++) {
             try {
@@ -281,7 +310,38 @@ public class ElasticsearchClusterRunner implements Closeable {
      * @param configs
      */
     public void build(final Configs configs) {
-        build(configs.build());
+        if (configs.fork) {
+            // TODO builder
+            final List<String> cmdList = new ArrayList<>();
+            cmdList.add("java");
+            final String classPath = System.getProperty("java.class.path");
+            if (classPath != null) {
+                cmdList.add("-cp");
+                cmdList.add(classPath);
+            }
+            cmdList.addAll(Arrays.asList(configs.build()));
+            cmdList.add(ElasticsearchClusterRunner.class.getCanonicalName());
+            final ProcessBuilder processBuilder = new ProcessBuilder(cmdList);
+            try {
+                process = processBuilder.start();
+            } catch (IOException e) {
+                throw new ClusterRunnerException("Failed to start a new process.", e);
+            }
+            try {
+                transportClient = new PreBuiltTransportClient(
+                        Settings.builder().put("client.transport.sniff", true).put("cluster.name", configs.clusterName).build())
+                                .addTransportAddress(new InetSocketTransportAddress(InetAddress.getLocalHost(), configs.baseTransportPort));
+            } catch (UnknownHostException e) {
+                logger.error("Failed to connect to Elasticsearch cluster.", e);
+                try {
+                    close();
+                } catch (IOException e1) {
+                    // ignore
+                }
+            }
+        } else {
+            build(configs.build());
+        }
     }
 
     /**
@@ -674,7 +734,11 @@ public class ElasticsearchClusterRunner implements Closeable {
      * @return
      */
     public Client client() {
-        return node().client();
+        if (transportClient == null) {
+            return node().client();
+        } else {
+            return transportClient;
+        }
     }
 
     /**
@@ -1031,17 +1095,16 @@ public class ElasticsearchClusterRunner implements Closeable {
                 .execute().actionGet();
     }
 
-    public IndicesAliasesResponse updateAlias(final String alias,
-            final String[] addedIndices, final String[] deletedIndices) {
+    public IndicesAliasesResponse updateAlias(final String alias, final String[] addedIndices, final String[] deletedIndices) {
         return updateAlias(builder -> {
             if (addedIndices != null && addedIndices.length > 0) {
-        builder.addAlias(addedIndices, alias);
+                builder.addAlias(addedIndices, alias);
             }
             if (deletedIndices != null && deletedIndices.length > 0) {
-        builder.removeAlias(deletedIndices, alias);
+                builder.removeAlias(deletedIndices, alias);
             }
             return builder;
-         });
+        });
     }
 
     public IndicesAliasesResponse updateAlias(
@@ -1156,6 +1219,17 @@ public class ElasticsearchClusterRunner implements Closeable {
     public static class Configs {
         List<String> configList = new ArrayList<>();
 
+        protected boolean fork = false;
+
+        protected String clusterName = "elasticsearch";
+
+        protected int baseTransportPort = 9300;
+
+        public Configs fork() {
+            fork = true;
+            return this;
+        }
+
         public Configs basePath(final String basePath) {
             configList.add("-basePath");
             configList.add(basePath);
@@ -1171,6 +1245,7 @@ public class ElasticsearchClusterRunner implements Closeable {
         public Configs baseTransportPort(final int baseTransportPort) {
             configList.add("-baseTransportPort");
             configList.add(String.valueOf(baseTransportPort));
+            this.baseTransportPort = baseTransportPort;
             return this;
         }
 
@@ -1183,6 +1258,7 @@ public class ElasticsearchClusterRunner implements Closeable {
         public Configs clusterName(final String clusterName) {
             configList.add("-clusterName");
             configList.add(clusterName);
+            this.clusterName = clusterName;
             return this;
         }
 
