@@ -20,7 +20,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -104,13 +104,12 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
 
                 // id
                 .startObject("id")//
-                .field("type", "string")//
-                .field("index", "not_analyzed")//
+                .field("type", "keyword")//
                 .endObject()//
 
                 // msg
                 .startObject("msg")//
-                .field("type", "string")//
+                .field("type", "text")//
                 .endObject()//
 
                 // order
@@ -210,7 +209,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                 9300);
         try (TransportClient client = new PreBuiltTransportClient(
                 transportClientSettings)) {
-            client.addTransportAddress(new InetSocketTransportAddress(
+            client.addTransportAddress(new TransportAddress(
                     new InetSocketAddress("localhost", port)));
             final SearchResponse searchResponse = client.prepareSearch(index)
                     .setTypes(type).setQuery(QueryBuilders.matchAllQuery())
@@ -224,7 +223,8 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         // http access
         // get
         try (CurlResponse curlResponse = Curl.get(node, "/_search")
-                .param("q", "*:*").execute()) {
+                .header("Content-Type", "application/json").param("q", "*:*")
+                .execute()) {
             final String content = curlResponse.getContentAsString();
             assertNotNull(content);
             assertTrue(content.contains("total"));
@@ -236,32 +236,36 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         // post
         try (CurlResponse curlResponse = Curl
                 .post(node, "/" + index + "/" + type)
+                .header("Content-Type", "application/json")
                 .body("{\"id\":\"2000\",\"msg\":\"test 2000\"}").execute()) {
             final Map<String, Object> map = curlResponse.getContentAsMap();
             assertNotNull(map);
-            assertEquals("true", map.get("created").toString());
+            assertEquals("created", map.get("result"));
         }
 
         // put
         try (CurlResponse curlResponse = Curl
                 .put(node, "/" + index + "/" + type + "/2001")
+                .header("Content-Type", "application/json")
                 .body("{\"id\":\"2001\",\"msg\":\"test 2001\"}").execute()) {
             final Map<String, Object> map = curlResponse.getContentAsMap();
             assertNotNull(map);
-            assertEquals("true", map.get("created").toString());
+            assertEquals("created", map.get("result"));
         }
 
         // delete
-        try (CurlResponse curlResponse = Curl.delete(node,
-                "/" + index + "/" + type + "/2001").execute()) {
+        try (CurlResponse curlResponse = Curl
+                .delete(node, "/" + index + "/" + type + "/2001")
+                .header("Content-Type", "application/json").execute()) {
             final Map<String, Object> map = curlResponse.getContentAsMap();
             assertNotNull(map);
-            assertEquals("true", map.get("found").toString());
+            assertEquals("deleted", map.get("result"));
         }
 
         // post
         try (CurlResponse curlResponse = Curl
                 .post(node, "/" + index + "/" + type)
+                .header("Content-Type", "application/json")
                 .onConnect(new CurlRequest.ConnectionBuilder() {
                     @Override
                     public void onConnect(CurlRequest curlRequest,
@@ -279,7 +283,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                 }).execute()) {
             final Map<String, Object> map = curlResponse.getContentAsMap();
             assertNotNull(map);
-            assertEquals("true", map.get("created").toString());
+            assertEquals("created", map.get("result"));
         }
 
         // close 1 node

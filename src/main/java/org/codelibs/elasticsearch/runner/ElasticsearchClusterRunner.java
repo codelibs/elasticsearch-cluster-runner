@@ -103,16 +103,18 @@ public class ElasticsearchClusterRunner implements Closeable {
     protected static final String ELASTICSEARCH_YAML = "elasticsearch.yml";
 
     public static String[] MODULE_TYPES = new String[] {
-            "org.elasticsearch.search.aggregations.matrix.MatrixAggregationPlugin",
-            "org.elasticsearch.ingest.common.IngestCommonPlugin",
-            "org.elasticsearch.script.expression.ExpressionPlugin",
-            "org.elasticsearch.script.groovy.GroovyPlugin",
-            "org.elasticsearch.script.mustache.MustachePlugin",
-            "org.elasticsearch.painless.PainlessPlugin",
             "org.elasticsearch.percolator.PercolatorPlugin",
+            "org.elasticsearch.plugin.repository.url.URLRepositoryPlugin",
+            "org.elasticsearch.transport.Netty4Plugin",
+            "org.elasticsearch.tribe.TribePlugin",
+            "org.elasticsearch.painless.PainlessPlugin",
+            "org.elasticsearch.ingest.common.IngestCommonPlugin",
+            "org.elasticsearch.join.ParentJoinPlugin",
             "org.elasticsearch.index.reindex.ReindexPlugin",
-            "org.elasticsearch.transport.Netty3Plugin",
-            "org.elasticsearch.transport.Netty4Plugin" };
+            "org.elasticsearch.script.expression.ExpressionPlugin",
+            "org.elasticsearch.script.mustache.MustachePlugin",
+            "org.elasticsearch.analysis.common.CommonAnalysisPlugin",
+            "org.elasticsearch.search.aggregations.matrix.MatrixAggregationPlugin"};
 
     protected static final String DATA_DIR = "data";
 
@@ -365,10 +367,10 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     protected Settings buildNodeSettings(final int number)
             throws IOException, UserException {
-        final Path homePath = Paths.get(basePath);
-        final Path confPath = Paths.get(basePath, CONFIG_DIR, "node_" + number);
-        final Path logsPath = Paths.get(basePath, LOGS_DIR, "node_" + number);
-        final Path dataPath = Paths.get(basePath, DATA_DIR, "node_" + number);
+        final Path homePath = Paths.get(basePath, "node_" + number);
+        final Path confPath = homePath.resolve(CONFIG_DIR);
+        final Path logsPath = homePath.resolve(LOGS_DIR);
+        final Path dataPath = homePath.resolve(DATA_DIR);
 
         createDir(homePath);
         createDir(confPath);
@@ -383,8 +385,6 @@ public class ElasticsearchClusterRunner implements Closeable {
 
         putIfAbsent(settingsBuilder, "path.home",
                 homePath.toAbsolutePath().toString());
-        putIfAbsent(settingsBuilder, "path.conf",
-                confPath.toAbsolutePath().toString());
         putIfAbsent(settingsBuilder, "path.data",
                 dataPath.toAbsolutePath().toString());
         putIfAbsent(settingsBuilder, "path.logs",
