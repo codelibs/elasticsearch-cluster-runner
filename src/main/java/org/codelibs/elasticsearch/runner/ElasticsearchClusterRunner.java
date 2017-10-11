@@ -133,6 +133,15 @@ public class ElasticsearchClusterRunner implements Closeable {
     @Option(name = "-basePath", usage = "Base path for Elasticsearch.")
     protected String basePath;
 
+    @Option(name = "-confPath", usage = "Config path for Elasticsearch.")
+    protected String confPath;
+
+    @Option(name = "-dataPath", usage = "Data path for Elasticsearch.")
+    protected String dataPath;
+
+    @Option(name = "-logsPath", usage = "Log path for Elasticsearch.")
+    protected String logsPath;
+
     @Option(name = "-numOfNode", usage = "The number of Elasticsearch node.")
     protected int numOfNode = 3;
 
@@ -366,9 +375,9 @@ public class ElasticsearchClusterRunner implements Closeable {
     protected Settings buildNodeSettings(final int number)
             throws IOException, UserException {
         final Path homePath = Paths.get(basePath);
-        final Path confPath = Paths.get(basePath, CONFIG_DIR, "node_" + number);
-        final Path logsPath = Paths.get(basePath, LOGS_DIR, "node_" + number);
-        final Path dataPath = Paths.get(basePath, DATA_DIR, "node_" + number);
+        final Path confPath = this.confPath == null ? Paths.get(basePath, CONFIG_DIR, "node_" + number) : Paths.get(this.confPath);
+        final Path logsPath = this.logsPath == null ? Paths.get(basePath, LOGS_DIR, "node_" + number) : Paths.get(this.logsPath);
+        final Path dataPath = this.dataPath == null ? Paths.get(basePath, DATA_DIR, "node_" + number) : Paths.get(this.dataPath);
 
         createDir(homePath);
         createDir(confPath);
