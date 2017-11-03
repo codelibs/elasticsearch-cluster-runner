@@ -429,7 +429,7 @@ public class ElasticsearchClusterRunner implements Closeable {
         final String pluginPath = settingsBuilder.get("path.plugins");
         if (pluginPath != null) {
             final Path sourcePath = Paths.get(pluginPath);
-            final Path targetPath = Paths.get(basePath, "plugins");
+            final Path targetPath = homePath.resolve("plugins");
             Files.walkFileTree(sourcePath, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(final Path dir,
