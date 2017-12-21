@@ -109,6 +109,7 @@ public class ElasticsearchClusterRunner implements Closeable {
             "org.elasticsearch.tribe.TribePlugin",
             "org.elasticsearch.painless.PainlessPlugin",
             "org.elasticsearch.ingest.common.IngestCommonPlugin",
+            "org.elasticsearch.index.mapper.MapperExtrasPlugin",
             "org.elasticsearch.join.ParentJoinPlugin",
             "org.elasticsearch.index.reindex.ReindexPlugin",
             "org.elasticsearch.script.expression.ExpressionPlugin",
@@ -472,7 +473,7 @@ public class ElasticsearchClusterRunner implements Closeable {
         print("----------------------------------------");
 
         final Settings settings = settingsBuilder.build();
-        final Environment environment = new Environment(settings);
+        final Environment environment = new Environment(settings, confPath);
         if (!disableESLogger) {
             LogConfigurator.registerErrorListener();
             LogConfigurator.configure(environment);

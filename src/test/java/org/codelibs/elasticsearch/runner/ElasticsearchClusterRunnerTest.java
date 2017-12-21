@@ -47,7 +47,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
             public void build(final int number, final Builder settingsBuilder) {
                 settingsBuilder.put("http.cors.enabled", true);
                 settingsBuilder.put("http.cors.allow-origin", "*");
-                settingsBuilder.putArray("discovery.zen.ping.unicast.hosts", "localhost:9301-9305");
+                settingsBuilder.putList("discovery.zen.ping.unicast.hosts", "localhost:9301-9305");
             }
         }).build(
                 newConfigs()
