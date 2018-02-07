@@ -103,19 +103,20 @@ public class ElasticsearchClusterRunner implements Closeable {
     protected static final String ELASTICSEARCH_YAML = "elasticsearch.yml";
 
     public static String[] MODULE_TYPES = new String[] {
-            "org.elasticsearch.percolator.PercolatorPlugin",
-            "org.elasticsearch.plugin.repository.url.URLRepositoryPlugin",
-            "org.elasticsearch.transport.Netty4Plugin",
-            "org.elasticsearch.tribe.TribePlugin",
-            "org.elasticsearch.painless.PainlessPlugin",
+            "org.elasticsearch.search.aggregations.matrix.MatrixAggregationPlugin",
+            "org.elasticsearch.analysis.common.CommonAnalysisPlugin",
             "org.elasticsearch.ingest.common.IngestCommonPlugin",
-            "org.elasticsearch.index.mapper.MapperExtrasPlugin",
-            "org.elasticsearch.join.ParentJoinPlugin",
-            "org.elasticsearch.index.reindex.ReindexPlugin",
             "org.elasticsearch.script.expression.ExpressionPlugin",
             "org.elasticsearch.script.mustache.MustachePlugin",
-            "org.elasticsearch.analysis.common.CommonAnalysisPlugin",
-            "org.elasticsearch.search.aggregations.matrix.MatrixAggregationPlugin"};
+            "org.elasticsearch.painless.PainlessPlugin",
+            "org.elasticsearch.index.mapper.MapperExtrasPlugin",
+            "org.elasticsearch.join.ParentJoinPlugin",
+            "org.elasticsearch.percolator.PercolatorPlugin",
+            "org.elasticsearch.index.rankeval.RankEvalPlugin",
+            "org.elasticsearch.index.reindex.ReindexPlugin",
+            "org.elasticsearch.plugin.repository.url.URLRepositoryPlugin",
+            "org.elasticsearch.transport.Netty4Plugin",
+            "org.elasticsearch.tribe.TribePlugin" };
 
     protected static final String DATA_DIR = "data";
 
