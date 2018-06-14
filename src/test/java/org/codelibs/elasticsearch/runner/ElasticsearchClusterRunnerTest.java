@@ -1,3 +1,18 @@
+/*
+ * Copyright 2012-2018 CodeLibs Project and the Others.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
+ */
 package org.codelibs.elasticsearch.runner;
 
 import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
@@ -9,10 +24,10 @@ import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
-import org.codelibs.elasticsearch.runner.net.Curl;
-import org.codelibs.elasticsearch.runner.net.CurlException;
-import org.codelibs.elasticsearch.runner.net.CurlRequest;
-import org.codelibs.elasticsearch.runner.net.CurlResponse;
+import org.codelibs.curl.CurlException;
+import org.codelibs.curl.CurlRequest;
+import org.codelibs.curl.CurlResponse;
+import org.codelibs.elasticsearch.runner.net.EcrCurl;
 import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
 import org.elasticsearch.action.index.IndexResponse;
@@ -222,48 +237,48 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
 
         // http access
         // get
-        try (CurlResponse curlResponse = Curl.get(node, "/_search")
+        try (CurlResponse curlResponse = EcrCurl.get(node, "/_search")
                 .header("Content-Type", "application/json").param("q", "*:*")
                 .execute()) {
             final String content = curlResponse.getContentAsString();
             assertNotNull(content);
             assertTrue(content.contains("total"));
-            final Map<String, Object> map = curlResponse.getContentAsMap();
+            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser);
             assertNotNull(map);
             assertEquals("false", map.get("timed_out").toString());
         }
 
         // post
-        try (CurlResponse curlResponse = Curl
+        try (CurlResponse curlResponse = EcrCurl
                 .post(node, "/" + index + "/" + type)
                 .header("Content-Type", "application/json")
                 .body("{\"id\":\"2000\",\"msg\":\"test 2000\"}").execute()) {
-            final Map<String, Object> map = curlResponse.getContentAsMap();
+            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser);
             assertNotNull(map);
             assertEquals("created", map.get("result"));
         }
 
         // put
-        try (CurlResponse curlResponse = Curl
+        try (CurlResponse curlResponse = EcrCurl
                 .put(node, "/" + index + "/" + type + "/2001")
                 .header("Content-Type", "application/json")
                 .body("{\"id\":\"2001\",\"msg\":\"test 2001\"}").execute()) {
-            final Map<String, Object> map = curlResponse.getContentAsMap();
+            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser);
             assertNotNull(map);
             assertEquals("created", map.get("result"));
         }
 
         // delete
-        try (CurlResponse curlResponse = Curl
+        try (CurlResponse curlResponse = EcrCurl
                 .delete(node, "/" + index + "/" + type + "/2001")
                 .header("Content-Type", "application/json").execute()) {
-            final Map<String, Object> map = curlResponse.getContentAsMap();
+            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser);
             assertNotNull(map);
             assertEquals("deleted", map.get("result"));
         }
 
         // post
-        try (CurlResponse curlResponse = Curl
+        try (CurlResponse curlResponse = EcrCurl
                 .post(node, "/" + index + "/" + type)
                 .header("Content-Type", "application/json")
                 .onConnect(new CurlRequest.ConnectionBuilder() {
@@ -281,7 +296,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                         }
                     }
                 }).execute()) {
-            final Map<String, Object> map = curlResponse.getContentAsMap();
+            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser);
             assertNotNull(map);
             assertEquals("created", map.get("result"));
         }
