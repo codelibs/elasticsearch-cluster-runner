@@ -475,7 +475,6 @@ public class ElasticsearchClusterRunner implements Closeable {
         putIfAbsent(settingsBuilder, NODE_NAME, nodeName);
         putIfAbsent(settingsBuilder, "node.master", String.valueOf(true));
         putIfAbsent(settingsBuilder, "node.data", String.valueOf(true));
-        putIfAbsent(settingsBuilder, "http.enabled", String.valueOf(true));
         putIfAbsent(settingsBuilder, "transport.tcp.port",
                 String.valueOf(transportPort));
         putIfAbsent(settingsBuilder, "http.port", String.valueOf(httpPort));
