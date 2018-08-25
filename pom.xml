@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.codelibs</groupId>
 	<artifactId>elasticsearch-cluster-runner</artifactId>
-	<version>6.3.2.1-SNAPSHOT</version>
+	<version>6.4.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>Elasticsearch Cluster Runner</name>
 	<inceptionYear>2011</inceptionYear>
@@ -29,9 +29,9 @@
 	</parent>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<elasticsearch.version>6.3.2</elasticsearch.version>
-		<lucene.version>7.3.1</lucene.version>
-		<log4j.version>2.9.1</log4j.version>
+		<elasticsearch.version>6.4.0</elasticsearch.version>
+		<lucene.version>7.4.0</lucene.version>
+		<log4j.version>2.11.1</log4j.version>
 		<slf4j.version>1.7.25</slf4j.version>
 		<jna.version>4.5.1</jna.version>
 	</properties>
