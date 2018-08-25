@@ -20,12 +20,10 @@ import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newCo
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
 import org.codelibs.curl.CurlException;
-import org.codelibs.curl.CurlRequest;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.elasticsearch.runner.net.EcrCurl;
 import org.elasticsearch.action.DocWriteResponse.Result;
@@ -281,19 +279,13 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         try (CurlResponse curlResponse = EcrCurl
                 .post(node, "/" + index + "/" + type)
                 .header("Content-Type", "application/json")
-                .onConnect(new CurlRequest.ConnectionBuilder() {
-                    @Override
-                    public void onConnect(CurlRequest curlRequest,
-                            HttpURLConnection connection) {
-                        connection.setDoOutput(true);
-                        try (BufferedWriter writer = new BufferedWriter(
-                                new OutputStreamWriter(connection
-                                        .getOutputStream(), "UTF-8"))) {
-                            writer.write("{\"id\":\"2002\",\"msg\":\"test 2002\"}");
-                            writer.flush();
-                        } catch (IOException e) {
-                            throw new CurlException("Failed to write data.", e);
-                        }
+                .onConnect((curlRequest, connection) -> {
+                    connection.setDoOutput(true);
+                    try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(), "UTF-8"))) {
+                        writer.write("{\"id\":\"2002\",\"msg\":\"test 2002\"}");
+                        writer.flush();
+                    } catch (IOException e) {
+                        throw new CurlException("Failed to write data.", e);
                     }
                 }).execute()) {
             final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser);
