@@ -194,29 +194,32 @@ public class ElasticsearchClusterRunner implements Closeable {
     protected Builder builder;
 
     public static void main(final String[] args) {
-        final ElasticsearchClusterRunner runner = new ElasticsearchClusterRunner();
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
+        try (final ElasticsearchClusterRunner runner = new ElasticsearchClusterRunner()) {
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        runner.close();
+                    } catch (final IOException e) {
+                        runner.print(e.getLocalizedMessage());
+                    }
+                }
+            });
+
+            runner.build(args);
+
+            while (true) {
+                if (runner.isClosed()) {
+                    break;
+                }
                 try {
-                    runner.close();
-                } catch (final IOException e) {
-                    runner.print(e.getLocalizedMessage());
+                    Thread.sleep(5000);
+                } catch (final InterruptedException e) {
+                    // no-op
                 }
             }
-        });
-
-        runner.build(args);
-
-        while (true) {
-            if (runner.isClosed()) {
-                break;
-            }
-            try {
-                Thread.sleep(5000);
-            } catch (final InterruptedException e) {
-                // no-op
-            }
+        } catch (IOException e) {
+            System.exit(1);
         }
     }
 
