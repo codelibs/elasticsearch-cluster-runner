@@ -42,15 +42,12 @@ import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequestBuilder;
-import org.elasticsearch.action.admin.indices.alias.IndicesAliasesResponse;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequestBuilder;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
 import org.elasticsearch.action.admin.indices.close.CloseIndexRequestBuilder;
-import org.elasticsearch.action.admin.indices.close.CloseIndexResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequestBuilder;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.admin.indices.flush.FlushRequestBuilder;
@@ -58,7 +55,6 @@ import org.elasticsearch.action.admin.indices.flush.FlushResponse;
 import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeRequestBuilder;
 import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeResponse;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequestBuilder;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.admin.indices.open.OpenIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.open.OpenIndexResponse;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequestBuilder;
@@ -72,6 +68,7 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.cli.UserException;
 import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.Client;
@@ -84,7 +81,7 @@ import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.logging.LogConfigurator;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -99,6 +96,8 @@ import org.kohsuke.args4j.Option;
 import org.kohsuke.args4j.ParserProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.dataformat.smile.SmileConstants;
 
 /**
  * ElasticsearchClusterRunner manages multiple Elasticsearch instances.
@@ -893,14 +892,14 @@ public class ElasticsearchClusterRunner implements Closeable {
         return actionGet;
     }
 
-    public CloseIndexResponse closeIndex(final String index) {
+    public AcknowledgedResponse closeIndex(final String index) {
         return closeIndex(index,
                 builder -> builder);
     }
 
-    public CloseIndexResponse closeIndex(final String index,
+    public AcknowledgedResponse closeIndex(final String index,
             final BuilderCallback<CloseIndexRequestBuilder> builder) {
-        final CloseIndexResponse actionGet = builder
+        final AcknowledgedResponse actionGet = builder
                 .apply(client().admin().indices().prepareClose(index)).execute()
                 .actionGet();
         if (!actionGet.isAcknowledged()) {
@@ -940,14 +939,14 @@ public class ElasticsearchClusterRunner implements Closeable {
         return actionGet.isExists();
     }
 
-    public DeleteIndexResponse deleteIndex(final String index) {
+    public AcknowledgedResponse deleteIndex(final String index) {
         return deleteIndex(index,
                 builder -> builder);
     }
 
-    public DeleteIndexResponse deleteIndex(final String index,
+    public AcknowledgedResponse deleteIndex(final String index,
             final BuilderCallback<DeleteIndexRequestBuilder> builder) {
-        final DeleteIndexResponse actionGet = builder
+        final AcknowledgedResponse actionGet = builder
                 .apply(client().admin().indices().prepareDelete(index))
                 .execute().actionGet();
         if (!actionGet.isAcknowledged()) {
@@ -956,22 +955,20 @@ public class ElasticsearchClusterRunner implements Closeable {
         return actionGet;
     }
 
-    public PutMappingResponse createMapping(final String index,
+    public AcknowledgedResponse createMapping(final String index,
             final String type, final String mappingSource) {
-        return createMapping(index,
-                builder -> builder.setType(type).setSource(mappingSource,
-                        XContentFactory.xContentType(mappingSource)));
+        return createMapping(index, builder -> builder.setType(type).setSource(mappingSource, xContentType(mappingSource)));
     }
 
-    public PutMappingResponse createMapping(final String index,
+    public AcknowledgedResponse createMapping(final String index,
             final String type, final XContentBuilder source) {
         return createMapping(index,
                 builder -> builder.setType(type).setSource(source));
     }
 
-    public PutMappingResponse createMapping(final String index,
+    public AcknowledgedResponse createMapping(final String index,
             final BuilderCallback<PutMappingRequestBuilder> builder) {
-        final PutMappingResponse actionGet = builder
+        final AcknowledgedResponse actionGet = builder
                 .apply(client().admin().indices().preparePutMapping(index))
                 .execute().actionGet();
         if (!actionGet.isAcknowledged()) {
@@ -984,10 +981,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     public IndexResponse insert(final String index, final String type,
             final String id, final String source) {
         return insert(index, type, id,
-                builder -> builder
-                        .setSource(source,
-                                XContentFactory.xContentType(source))
-                        .setRefreshPolicy(RefreshPolicy.IMMEDIATE));
+                builder -> builder.setSource(source, xContentType(source)).setRefreshPolicy(RefreshPolicy.IMMEDIATE));
     }
 
     public IndexResponse insert(final String index, final String type,
@@ -1060,7 +1054,7 @@ public class ElasticsearchClusterRunner implements Closeable {
                 .execute().actionGet();
     }
 
-    public IndicesAliasesResponse updateAlias(final String alias,
+    public AcknowledgedResponse updateAlias(final String alias,
             final String[] addedIndices, final String[] deletedIndices) {
         return updateAlias(builder -> {
             if (addedIndices != null && addedIndices.length > 0) {
@@ -1073,9 +1067,9 @@ public class ElasticsearchClusterRunner implements Closeable {
          });
     }
 
-    public IndicesAliasesResponse updateAlias(
+    public AcknowledgedResponse updateAlias(
             final BuilderCallback<IndicesAliasesRequestBuilder> builder) {
-        final IndicesAliasesResponse actionGet = builder
+        final AcknowledgedResponse actionGet = builder
                 .apply(client().admin().indices().prepareAliases()).execute()
                 .actionGet();
         if (!actionGet.isAcknowledged()) {
@@ -1252,6 +1246,38 @@ public class ElasticsearchClusterRunner implements Closeable {
             return configList.toArray(new String[configList.size()]);
         }
 
+    }
+
+    private static XContentType xContentType(CharSequence content) {
+        int length = content.length() < 20 ? content.length() : 20;
+        if (length == 0) {
+            return null;
+        }
+        char first = content.charAt(0);
+        if (first == '{') {
+            return XContentType.JSON;
+        }
+        // Should we throw a failure here? Smile idea is to use it in bytes....
+        if (length > 2 && first == SmileConstants.HEADER_BYTE_1 && content.charAt(1) == SmileConstants.HEADER_BYTE_2
+                && content.charAt(2) == SmileConstants.HEADER_BYTE_3) {
+            return XContentType.SMILE;
+        }
+        if (length > 2 && first == '-' && content.charAt(1) == '-' && content.charAt(2) == '-') {
+            return XContentType.YAML;
+        }
+
+        // CBOR is not supported
+
+        for (int i = 0; i < length; i++) {
+            char c = content.charAt(i);
+            if (c == '{') {
+                return XContentType.JSON;
+            }
+            if (Character.isWhitespace(c) == false) {
+                break;
+            }
+        }
+        return null;
     }
 
     /**

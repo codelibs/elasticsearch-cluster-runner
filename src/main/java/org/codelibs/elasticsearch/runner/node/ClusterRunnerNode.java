@@ -17,6 +17,7 @@ package org.codelibs.elasticsearch.runner.node;
 
 import java.util.Collection;
 
+import org.elasticsearch.common.logging.LogConfigurator;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.node.InternalSettingsPreparer;
@@ -29,7 +30,7 @@ public class ClusterRunnerNode extends Node {
 
     public ClusterRunnerNode(final Environment tmpEnv,
             final Collection<Class<? extends Plugin>> classpathPlugins) {
-        super(tmpEnv, classpathPlugins);
+        super(tmpEnv, classpathPlugins, true);
         this.plugins = classpathPlugins;
     }
 
@@ -42,4 +43,9 @@ public class ClusterRunnerNode extends Node {
 	public Collection<Class<? extends Plugin>> getPlugins() {
 		return plugins;
 	}
+
+    @Override
+    protected void registerDerivedNodeNameWithLogger(String nodeName) {
+        LogConfigurator.setNodeName(nodeName);
+    }
 }
