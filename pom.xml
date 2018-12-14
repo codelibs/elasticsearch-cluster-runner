@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.codelibs</groupId>
 	<artifactId>elasticsearch-cluster-runner</artifactId>
-	<version>6.5.3.1-SNAPSHOT</version>
+	<version>6.5.1.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>Elasticsearch Cluster Runner</name>
 	<inceptionYear>2011</inceptionYear>
@@ -29,11 +29,13 @@
 	</parent>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<elasticsearch.version>6.5.3</elasticsearch.version>
+		<elasticsearch.version>6.5.1</elasticsearch.version>
 		<lucene.version>7.5.0</lucene.version>
 		<log4j.version>2.11.1</log4j.version>
 		<slf4j.version>1.7.25</slf4j.version>
 		<jna.version>4.5.1</jna.version>
+		<jts-core.version>1.16.0</jts-core.version>
+		<spatial4j.version>0.7</spatial4j.version>
 	</properties>
 	<build>
 		<plugins>
@@ -243,6 +245,22 @@
 			<artifactId>slf4j-nop</artifactId>
 			<version>${slf4j.version}</version>
 			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.locationtech.jts</groupId>
+			<artifactId>jts-core</artifactId>
+			<version>${jts-core.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>xerces</groupId>
+					<artifactId>xercesImpl</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.locationtech.spatial4j</groupId>
+			<artifactId>spatial4j</artifactId>
+			<version>${spatial4j.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
