@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.codelibs</groupId>
 	<artifactId>elasticsearch-cluster-runner</artifactId>
-	<version>6.5.4.1-SNAPSHOT</version>
+	<version>6.6.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>Elasticsearch Cluster Runner</name>
 	<inceptionYear>2011</inceptionYear>
@@ -29,8 +29,8 @@
 	</parent>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<elasticsearch.version>6.5.4</elasticsearch.version>
-		<lucene.version>7.5.0</lucene.version>
+		<elasticsearch.version>6.6.0</elasticsearch.version>
+		<lucene.version>7.6.0</lucene.version>
 		<log4j.version>2.11.1</log4j.version>
 		<slf4j.version>1.7.25</slf4j.version>
 		<jna.version>4.5.1</jna.version>
@@ -152,6 +152,21 @@
 			<groupId>org.codelibs.elasticsearch.module</groupId>
 			<artifactId>lang-expression</artifactId>
 			<version>${elasticsearch.version}</version>
+			<!-- workaround: remove asm 5.0 -->
+			<exclusions>
+				<exclusion>
+					<groupId>org.ow2.asm</groupId>
+					<artifactId>asm</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.ow2.asm</groupId>
+					<artifactId>asm-commons</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.ow2.asm</groupId>
+					<artifactId>asm-tree</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.codelibs.elasticsearch.module</groupId>
