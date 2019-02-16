@@ -15,7 +15,7 @@
 	</licenses>
 	<organization>
 		<name>CodeLibs Project</name>
-		<url>http://www.codelibs.org/</url>
+		<url>https://www.codelibs.org/</url>
 	</organization>
 	<scm>
 		<connection>scm:git:git@github.com:codelibs/elasticsearch-cluster-runner.git</connection>
@@ -95,7 +95,7 @@
 					</includes>
 					<encoding>UTF-8</encoding>
 					<headerDefinitions>
-						<headerDefinition>http://www.codelibs.org/assets/license/header-definition-2.xml</headerDefinition>
+						<headerDefinition>https://www.codelibs.org/assets/license/header-definition-2.xml</headerDefinition>
 					</headerDefinitions>
 				</configuration>
 			</plugin>
