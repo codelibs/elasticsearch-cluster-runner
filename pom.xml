@@ -148,6 +148,16 @@
 			<artifactId>ingest-common</artifactId>
 			<version>${elasticsearch.version}</version>
 		</dependency>
+		<!-- <dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>ingest-geoip</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency> -->
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>ingest-user-agent</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.codelibs.elasticsearch.module</groupId>
 			<artifactId>lang-expression</artifactId>
