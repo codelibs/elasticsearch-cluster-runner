@@ -243,7 +243,7 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     /**
      * Close a cluster runner.
-     * @throws IOException
+     * @throws IOException i/o exception
      */
     @Override
     public void close() throws IOException {
@@ -299,8 +299,8 @@ public class ElasticsearchClusterRunner implements Closeable {
     /**
      * Configure each Elasticsearch instance by builder.
      *
-     * @param builder
-     * @return
+     * @param builder builder to create a cluster
+     * @return this instance
      */
     public ElasticsearchClusterRunner onBuild(final Builder builder) {
         this.builder = builder;
@@ -310,7 +310,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     /**
      * Create and start Elasticsearch cluster with Configs instance.
      *
-     * @param configs
+     * @param configs configuration
      */
     public void build(final Configs configs) {
         build(configs.build());
@@ -319,7 +319,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     /**
      * Create and start Elasticsearch cluster with arguments.
      *
-     * @param args
+     * @param args artuments for starting a cluster
      */
     public void build(final String... args) {
         if (args != null) {
@@ -544,7 +544,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     /**
      * Start a closed node.
      *
-     * @param i
+     * @param i the number of nodes
      * @return true if the node is started.
      */
     @SuppressWarnings("resource")
@@ -587,7 +587,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     /**
      * Return a node index.
      *
-     * @param node
+     * @param node node to check an index
      * @return -1 if the node does not exist.
      */
     public int getNodeIndex(final Node node) {
@@ -630,7 +630,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     /**
      * Return an available node.
      *
-     * @return
+     * @return node
      */
     public Node node() {
         for (final Node node : nodeList) {
@@ -644,7 +644,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     /**
      * Return a master node.
      *
-     * @return
+     * @return master node
      */
     public synchronized Node masterNode() {
         final ClusterState state = client().admin().cluster().prepareState().execute().actionGet().getState();
@@ -655,7 +655,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     /**
      * Return a non-master node.
      *
-     * @return
+     * @return non-master node
      */
     public synchronized Node nonMasterNode() {
         final ClusterState state = client().admin().cluster().prepareState().execute().actionGet().getState();
@@ -671,7 +671,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     /**
      * Return an elasticsearch client.
      *
-     * @return
+     * @return client
      */
     public Client client() {
         return node().client();
@@ -680,7 +680,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     /**
      * Return an elasticsearch admin client.
      *
-     * @return
+     * @return admin client
      */
     public AdminClient admin() {
         return client().admin();
@@ -689,8 +689,8 @@ public class ElasticsearchClusterRunner implements Closeable {
     /**
      * Wait for green state of a cluster.
      *
-     * @param indices
-     * @return
+     * @param indices indices to check status
+     * @return cluster health status
      */
     public ClusterHealthStatus ensureGreen(final String... indices) {
         final ClusterHealthResponse actionGet = client().admin().cluster().health(
@@ -706,8 +706,8 @@ public class ElasticsearchClusterRunner implements Closeable {
     /**
      * Wait for yellow state of a cluster.
      *
-     * @param indices
-     * @return
+     * @param indices indices to check status
+     * @return cluster health status
      */
     public ClusterHealthStatus ensureYellow(final String... indices) {
         final ClusterHealthResponse actionGet = client().admin().cluster().health(Requests.clusterHealthRequest(indices)
@@ -1168,8 +1168,6 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     /**
      * Callback function.
-     *
-     * @param <T>
      */
     public interface BuilderCallback<T> {
         T apply(T builder);
