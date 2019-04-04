@@ -29,7 +29,7 @@
 	</parent>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<elasticsearch.version>7.0.0-rc1</elasticsearch.version>
+		<elasticsearch.version>7.0.0-rc2</elasticsearch.version>
 		<lucene.version>8.0.0</lucene.version>
 		<log4j.version>2.11.1</log4j.version>
 		<slf4j.version>1.7.25</slf4j.version>
@@ -76,6 +76,7 @@
 					<encoding>UTF-8</encoding>
 					<docencoding>UTF-8</docencoding>
 					<charset>UTF-8</charset>
+					<source>8</source>
 				</configuration>
 			</plugin>
 			<plugin>
