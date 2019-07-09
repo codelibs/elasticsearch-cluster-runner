@@ -228,7 +228,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
             final String content = curlResponse.getContentAsString();
             assertNotNull(content);
             assertTrue(content.contains("total"));
-            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser);
+            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser());
             assertNotNull(map);
             assertEquals("false", map.get("timed_out").toString());
         }
@@ -236,7 +236,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         // post
         try (CurlResponse curlResponse = EcrCurl.post(node, "/" + index + "/" + type).header("Content-Type", "application/json")
                 .body("{\"id\":\"2000\",\"msg\":\"test 2000\"}").execute()) {
-            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser);
+            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser());
             assertNotNull(map);
             assertEquals("created", map.get("result"));
         }
@@ -244,7 +244,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         // put
         try (CurlResponse curlResponse = EcrCurl.put(node, "/" + index + "/" + type + "/2001").header("Content-Type", "application/json")
                 .body("{\"id\":\"2001\",\"msg\":\"test 2001\"}").execute()) {
-            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser);
+            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser());
             assertNotNull(map);
             assertEquals("created", map.get("result"));
         }
@@ -252,7 +252,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         // delete
         try (CurlResponse curlResponse =
                 EcrCurl.delete(node, "/" + index + "/" + type + "/2001").header("Content-Type", "application/json").execute()) {
-            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser);
+            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser());
             assertNotNull(map);
             assertEquals("deleted", map.get("result"));
         }
@@ -268,7 +268,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                         throw new CurlException("Failed to write data.", e);
                     }
                 }).execute()) {
-            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser);
+            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser());
             assertNotNull(map);
             assertEquals("created", map.get("result"));
         }

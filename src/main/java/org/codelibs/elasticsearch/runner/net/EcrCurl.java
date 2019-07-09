@@ -77,7 +77,11 @@ public class EcrCurl {
         return new CurlRequest(Method.DELETE, url);
     }
 
-    public static Function<CurlResponse, Map<String, Object>> jsonParser = response -> {
+    public static Function<CurlResponse, Map<String, Object>> jsonParser() {
+        return PARSER;
+    }
+
+    protected static final Function<CurlResponse, Map<String, Object>> PARSER = response -> {
         try (InputStream is = response.getContentAsStream()) {
             return JsonXContent.jsonXContent.createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, is).map();
         } catch (final Exception e) {

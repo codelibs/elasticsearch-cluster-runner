@@ -116,7 +116,7 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     protected static final String ELASTICSEARCH_YAML = "elasticsearch.yml";
 
-    public static String[] MODULE_TYPES = new String[] { //
+    public static final String[] MODULE_TYPES = new String[] { //
             "org.elasticsearch.search.aggregations.matrix.MatrixAggregationPlugin", //
             "org.elasticsearch.analysis.common.CommonAnalysisPlugin", //
             "org.elasticsearch.ingest.common.IngestCommonPlugin", //
@@ -192,7 +192,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     @Option(name = "-pluginTypes", usage = "Plugin types.")
     protected String pluginTypes;
 
-    protected Builder builder;
+    protected Builder settingsBuilder;
 
     public static void main(final String[] args) {
         try (final ElasticsearchClusterRunner runner = new ElasticsearchClusterRunner()) {
@@ -225,6 +225,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     }
 
     public ElasticsearchClusterRunner() {
+        // nothing
     }
 
     /**
@@ -303,7 +304,7 @@ public class ElasticsearchClusterRunner implements Closeable {
      * @return this instance
      */
     public ElasticsearchClusterRunner onBuild(final Builder builder) {
-        this.builder = builder;
+        this.settingsBuilder = builder;
         return this;
     }
 
@@ -388,15 +389,15 @@ public class ElasticsearchClusterRunner implements Closeable {
         createDir(logsPath);
         createDir(dataPath);
 
-        final Settings.Builder settingsBuilder = builder();
+        final Settings.Builder builder = builder();
 
-        if (builder != null) {
-            builder.build(id, settingsBuilder);
+        if (settingsBuilder != null) {
+            settingsBuilder.build(id, builder);
         }
 
-        putIfAbsent(settingsBuilder, "path.home", homePath.toAbsolutePath().toString());
-        putIfAbsent(settingsBuilder, "path.data", dataPath.toAbsolutePath().toString());
-        putIfAbsent(settingsBuilder, "path.logs", logsPath.toAbsolutePath().toString());
+        putIfAbsent(builder, "path.home", homePath.toAbsolutePath().toString());
+        putIfAbsent(builder, "path.data", dataPath.toAbsolutePath().toString());
+        putIfAbsent(builder, "path.logs", logsPath.toAbsolutePath().toString());
 
         final Path esConfPath = confPath.resolve(ELASTICSEARCH_YAML);
         if (!esConfPath.toFile().exists()) {
@@ -421,7 +422,7 @@ public class ElasticsearchClusterRunner implements Closeable {
         }
 
         try {
-            final String pluginPath = settingsBuilder.get("path.plugins");
+            final String pluginPath = builder.get("path.plugins");
             if (pluginPath != null) {
                 final Path sourcePath = Paths.get(pluginPath);
                 final Path targetPath = homePath.resolve("plugins");
@@ -438,19 +439,19 @@ public class ElasticsearchClusterRunner implements Closeable {
                         return FileVisitResult.CONTINUE;
                     }
                 });
-                settingsBuilder.remove("path.plugins");
+                builder.remove("path.plugins");
             }
 
             final String nodeName = "Node " + id;
             final int transportPort = getAvailableTransportPort(id);
             final int httpPort = getAvailableHttpPort(id);
-            putIfAbsent(settingsBuilder, "cluster.name", clusterName);
-            putIfAbsent(settingsBuilder, NODE_NAME, nodeName);
-            putIfAbsent(settingsBuilder, "node.master", String.valueOf(true));
-            putIfAbsent(settingsBuilder, "node.data", String.valueOf(true));
-            putIfAbsent(settingsBuilder, "transport.tcp.port", String.valueOf(transportPort));
-            putIfAbsent(settingsBuilder, "http.port", String.valueOf(httpPort));
-            putIfAbsent(settingsBuilder, "index.store.type", indexStoreType);
+            putIfAbsent(builder, "cluster.name", clusterName);
+            putIfAbsent(builder, NODE_NAME, nodeName);
+            putIfAbsent(builder, "node.master", String.valueOf(true));
+            putIfAbsent(builder, "node.data", String.valueOf(true));
+            putIfAbsent(builder, "transport.tcp.port", String.valueOf(transportPort));
+            putIfAbsent(builder, "http.port", String.valueOf(httpPort));
+            putIfAbsent(builder, "index.store.type", indexStoreType);
 
             print("Node Name:      " + nodeName);
             print("HTTP Port:      " + httpPort);
@@ -458,7 +459,7 @@ public class ElasticsearchClusterRunner implements Closeable {
             print("Data Directory: " + dataPath);
             print("Log Directory:  " + logsPath);
 
-            final Settings settings = settingsBuilder.build();
+            final Settings settings = builder.build();
             final Environment environment =
                     InternalSettingsPreparer.prepareEnvironment(settings, Collections.emptyMap(), confPath, () -> nodeName);
             if (!disableESLogger) {
@@ -514,9 +515,9 @@ public class ElasticsearchClusterRunner implements Closeable {
         throw new ClusterRunnerException("The transport port " + transportPort + " is unavailable.");
     }
 
-    protected void putIfAbsent(final Settings.Builder settingsBuilder, final String key, final String value) {
-        if (settingsBuilder.get(key) == null && value != null) {
-            settingsBuilder.put(key, value);
+    protected void putIfAbsent(final Settings.Builder builder, final String key, final String value) {
+        if (builder.get(key) == null && value != null) {
+            builder.put(key, value);
         }
     }
 
@@ -991,7 +992,7 @@ public class ElasticsearchClusterRunner implements Closeable {
         }
     }
 
-    private final static class CleanUpFileVisitor implements FileVisitor<Path> {
+    private static final class CleanUpFileVisitor implements FileVisitor<Path> {
         private final List<Throwable> errorList = new ArrayList<>();
 
         @Override
@@ -1032,7 +1033,7 @@ public class ElasticsearchClusterRunner implements Closeable {
             }
         }
 
-        private FileVisitResult checkIfExist(final Path path) throws IOException {
+        private FileVisitResult checkIfExist(final Path path) {
             if (path.toFile().exists()) {
                 errorList.add(new IOException("Failed to delete " + path));
                 path.toFile().deleteOnExit();
@@ -1049,9 +1050,9 @@ public class ElasticsearchClusterRunner implements Closeable {
 
         /**
          * @param index an index of nodes
-         * @param settingsBuilder a builder instance to create a node
+         * @param builder a builder instance to create a node
          */
-        void build(int index, Settings.Builder settingsBuilder);
+        void build(int index, Settings.Builder builder);
     }
 
     public static Configs newConfigs() {
@@ -1159,7 +1160,7 @@ public class ElasticsearchClusterRunner implements Closeable {
             if (c == '{') {
                 return XContentType.JSON;
             }
-            if (Character.isWhitespace(c) == false) {
+            if (!Character.isWhitespace(c)) {
                 break;
             }
         }

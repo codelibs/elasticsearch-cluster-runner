@@ -21,7 +21,7 @@ public class ClusterRunnerException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
-    private transient final ActionResponse response;
+    private final transient ActionResponse response;
 
     public ClusterRunnerException(final String message, final Throwable cause) {
         super(message, cause);
