@@ -116,7 +116,7 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     protected static final String ELASTICSEARCH_YAML = "elasticsearch.yml";
 
-    public static final String[] MODULE_TYPES = new String[] { //
+    protected static final String[] MODULE_TYPES = new String[] { //
             "org.elasticsearch.search.aggregations.matrix.MatrixAggregationPlugin", //
             "org.elasticsearch.analysis.common.CommonAnalysisPlugin", //
             "org.elasticsearch.ingest.common.IngestCommonPlugin", //
