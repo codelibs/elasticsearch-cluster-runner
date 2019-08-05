@@ -33,6 +33,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.codelibs.elasticsearch.runner.node.ClusterRunnerNode;
@@ -85,6 +86,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.node.InternalSettingsPreparer;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeValidationException;
 import org.elasticsearch.plugins.Plugin;
@@ -383,11 +385,13 @@ public class ElasticsearchClusterRunner implements Closeable {
 
         for (int i = 0; i < numOfNode; i++) {
             try {
-                final Settings settings = buildNodeSettings(i + 1);
-                final Node node = new ClusterRunnerNode(settings, pluginList);
+                final Environment environment = buildNodeEnvironment(i + 1);
+                final Node node = new ClusterRunnerNode(
+                            InternalSettingsPreparer.prepareEnvironment(environment.settings(), null,
+                                        Collections.emptyMap(), environment.configFile()), pluginList);
                 node.start();
                 nodeList.add(node);
-                settingsList.add(settings);
+                settingsList.add(environment.settings());
             } catch (final Exception e) {
                 throw new ClusterRunnerException(
                         "Failed to start node " + (i + 1), e);
@@ -395,7 +399,7 @@ public class ElasticsearchClusterRunner implements Closeable {
         }
     }
 
-    protected Settings buildNodeSettings(final int number)
+    protected Environment buildNodeEnvironment(final int number)
             throws IOException, UserException {
         final Path homePath = Paths.get(basePath, "node_" + number);
         final Path confPath = this.confPath == null ? homePath.resolve(CONFIG_DIR) : Paths.get(this.confPath);
@@ -500,7 +504,7 @@ public class ElasticsearchClusterRunner implements Closeable {
         createDir(environment.modulesFile());
         createDir(environment.pluginsFile());
 
-        return settings;
+        return environment;
     }
 
     protected int getAvailableHttpPort(final int number) {
