@@ -148,8 +148,6 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     protected int maxHttpPort = 9299;
 
-    protected int maxTransportPort = 9399;
-
     @Option(name = "-basePath", usage = "Base path for Elasticsearch.")
     protected String basePath;
 
@@ -164,9 +162,6 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     @Option(name = "-numOfNode", usage = "The number of Elasticsearch node.")
     protected int numOfNode = 3;
-
-    @Option(name = "-baseTransportPort", usage = "Base transport port.")
-    protected int baseTransportPort = 9300;
 
     @Option(name = "-baseHttpPort", usage = "Base http port.")
     protected int baseHttpPort = 9200;
@@ -443,19 +438,16 @@ public class ElasticsearchClusterRunner implements Closeable {
             }
 
             final String nodeName = "Node " + id;
-            final int transportPort = getAvailableTransportPort(id);
             final int httpPort = getAvailableHttpPort(id);
             putIfAbsent(builder, "cluster.name", clusterName);
             putIfAbsent(builder, NODE_NAME, nodeName);
             putIfAbsent(builder, "node.master", String.valueOf(true));
             putIfAbsent(builder, "node.data", String.valueOf(true));
-            putIfAbsent(builder, "transport.tcp.port", String.valueOf(transportPort));
             putIfAbsent(builder, "http.port", String.valueOf(httpPort));
             putIfAbsent(builder, "index.store.type", indexStoreType);
 
             print("Node Name:      " + nodeName);
             print("HTTP Port:      " + httpPort);
-            print("Transport Port: " + transportPort);
             print("Data Directory: " + dataPath);
             print("Log Directory:  " + logsPath);
 
@@ -497,24 +489,6 @@ public class ElasticsearchClusterRunner implements Closeable {
         throw new ClusterRunnerException("The http port " + httpPort + " is unavailable.");
     }
 
-    protected int getAvailableTransportPort(final int number) {
-        int transportPort = baseTransportPort + number;
-        if (maxTransportPort < 0) {
-            return transportPort;
-        }
-        while (transportPort <= maxTransportPort) {
-            try (Socket socket = new Socket("localhost", transportPort)) {
-                transportPort++;
-            } catch (final ConnectException e) {
-                return transportPort;
-            } catch (final IOException e) {
-                print(e.getMessage());
-                transportPort++;
-            }
-        }
-        throw new ClusterRunnerException("The transport port " + transportPort + " is unavailable.");
-    }
-
     protected void putIfAbsent(final Settings.Builder builder, final String key, final String value) {
         if (builder.get(key) == null && value != null) {
             builder.put(key, value);
@@ -523,10 +497,6 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     public void setMaxHttpPort(final int maxHttpPort) {
         this.maxHttpPort = maxHttpPort;
-    }
-
-    public void setMaxTransportPort(final int maxTransportPort) {
-        this.maxTransportPort = maxTransportPort;
     }
 
     /**
@@ -1075,12 +1045,6 @@ public class ElasticsearchClusterRunner implements Closeable {
         public Configs numOfNode(final int numOfNode) {
             configList.add("-numOfNode");
             configList.add(String.valueOf(numOfNode));
-            return this;
-        }
-
-        public Configs baseTransportPort(final int baseTransportPort) {
-            configList.add("-baseTransportPort");
-            configList.add(String.valueOf(baseTransportPort));
             return this;
         }
 
