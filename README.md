@@ -6,7 +6,7 @@ You can use Elasticsearch Cluster Runner as Embedded Elasticsearch in your appli
 
 ## Version
 
-[Versions in Maven Repository](http://central.maven.org/maven2/org/codelibs/elasticsearch-cluster-runner/)
+[Versions in Maven Repository](https://repo1.maven.org/maven2/org/codelibs/elasticsearch-cluster-runner/)
 
 ## Run on Your Application
 
