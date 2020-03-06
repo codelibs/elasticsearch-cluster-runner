@@ -346,7 +346,7 @@ public class ElasticsearchClusterRunner implements Closeable {
                 clazz = Class.forName(moduleType).asSubclass(Plugin.class);
                 pluginList.add(clazz);
             } catch (final ClassNotFoundException e) {
-                logger.debug(moduleType + " is not found.", e);
+                logger.debug("{} is not found.", moduleType, e);
             }
         }
         if (pluginTypes != null) {
