@@ -841,12 +841,23 @@ public class ElasticsearchClusterRunner implements Closeable {
         return actionGet;
     }
 
+    @Deprecated
     public AcknowledgedResponse createMapping(final String index, final String type, final String mappingSource) {
         return createMapping(index, builder -> builder.setType(type).setSource(mappingSource, xContentType(mappingSource)));
     }
 
+    @Deprecated
     public AcknowledgedResponse createMapping(final String index, final String type, final XContentBuilder source) {
         return createMapping(index, builder -> builder.setType(type).setSource(source));
+    }
+
+
+    public AcknowledgedResponse createMapping(final String index, final String mappingSource) {
+        return createMapping(index, builder -> builder.setType("_doc").setSource(mappingSource, xContentType(mappingSource)));
+    }
+
+    public AcknowledgedResponse createMapping(final String index, final XContentBuilder source) {
+        return createMapping(index, builder -> builder.setType("_doc").setSource(source));
     }
 
     public AcknowledgedResponse createMapping(final String index, final BuilderCallback<PutMappingRequestBuilder> builder) {
@@ -857,11 +868,13 @@ public class ElasticsearchClusterRunner implements Closeable {
         return actionGet;
     }
 
+    @Deprecated
     public IndexResponse insert(final String index, final String type, final String id, final String source) {
         return insert(index, type, id,
                 builder -> builder.setSource(source, xContentType(source)).setRefreshPolicy(RefreshPolicy.IMMEDIATE));
     }
 
+    @Deprecated
     public IndexResponse insert(final String index, final String type, final String id,
             final BuilderCallback<IndexRequestBuilder> builder) {
         final IndexResponse actionGet = builder.apply(client().prepareIndex(index, type, id)).execute().actionGet();
@@ -871,15 +884,44 @@ public class ElasticsearchClusterRunner implements Closeable {
         return actionGet;
     }
 
+    public IndexResponse insert(final String index, final String id, final String source) {
+        return insert(index, id,
+                builder -> builder.setSource(source, xContentType(source)).setRefreshPolicy(RefreshPolicy.IMMEDIATE));
+    }
+
+    public IndexResponse insert(final String index, final String id,
+            final BuilderCallback<IndexRequestBuilder> builder) {
+        final IndexResponse actionGet = builder.apply(client().prepareIndex().setIndex(index).setId(id)).execute().actionGet();
+        if (actionGet.getResult() != Result.CREATED) {
+            onFailure("Failed to insert " + id + " into " + index + ".", actionGet);
+        }
+        return actionGet;
+    }
+
+    @Deprecated
     public DeleteResponse delete(final String index, final String type, final String id) {
         return delete(index, type, id, builder -> builder.setRefreshPolicy(RefreshPolicy.IMMEDIATE));
     }
 
+    @Deprecated
     public DeleteResponse delete(final String index, final String type, final String id,
             final BuilderCallback<DeleteRequestBuilder> builder) {
         final DeleteResponse actionGet = builder.apply(client().prepareDelete(index, type, id)).execute().actionGet();
         if (actionGet.getResult() != Result.DELETED) {
             onFailure("Failed to delete " + id + " from " + index + "/" + type + ".", actionGet);
+        }
+        return actionGet;
+    }
+
+    public DeleteResponse delete(final String index, final String id) {
+        return delete(index, id, builder -> builder.setRefreshPolicy(RefreshPolicy.IMMEDIATE));
+    }
+
+    public DeleteResponse delete(final String index, final String id,
+            final BuilderCallback<DeleteRequestBuilder> builder) {
+        final DeleteResponse actionGet = builder.apply(client().prepareDelete().setIndex(index).setId(id)).execute().actionGet();
+        if (actionGet.getResult() != Result.DELETED) {
+            onFailure("Failed to delete " + id + " from " + index + ".", actionGet);
         }
         return actionGet;
     }

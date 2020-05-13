@@ -103,7 +103,6 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         assertNotNull(runner.clusterService());
 
         final String index = "test_index";
-        final String type = "test_type";
 
         // create an index
         runner.createIndex(index, (Settings) null);
@@ -112,7 +111,6 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         // create a mapping
         final XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()//
                 .startObject()//
-                .startObject(type)//
                 .startObject("properties")//
 
                 // id
@@ -136,9 +134,8 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
                 .endObject()//
 
                 .endObject()//
-                .endObject()//
                 .endObject();
-        runner.createMapping(index, type, mappingBuilder);
+        runner.createMapping(index, mappingBuilder);
 
         if (!runner.indexExists(index)) {
             fail();
@@ -146,7 +143,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
 
         // create 1000 documents
         for (int i = 1; i <= 1000; i++) {
-            final IndexResponse indexResponse1 = runner.insert(index, type, String.valueOf(i),
+            final IndexResponse indexResponse1 = runner.insert(index, String.valueOf(i),
                     "{\"id\":\"" + i + "\",\"msg\":\"test " + i + "\",\"order\":" + i + ",\"@timestamp\":\"2000-01-01T00:00:00\"}");
             assertEquals(Result.CREATED, indexResponse1.getResult());
         }
@@ -193,7 +190,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         }
 
         // delete 1 document
-        runner.delete(index, type, String.valueOf(1));
+        runner.delete(index, String.valueOf(1));
         runner.flush();
 
         {
@@ -214,7 +211,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         try (TransportClient client = new PreBuiltTransportClient(transportClientSettings)) {
             client.addTransportAddress(new TransportAddress(new InetSocketAddress("localhost", port)));
             final SearchResponse searchResponse =
-                    client.prepareSearch(index).setTypes(type).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
+                    client.prepareSearch(index).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
             assertEquals(999, searchResponse.getHits().getTotalHits().value);
             assertEquals(10, searchResponse.getHits().getHits().length);
         }
@@ -234,7 +231,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         }
 
         // post
-        try (CurlResponse curlResponse = EcrCurl.post(node, "/" + index + "/" + type).header("Content-Type", "application/json")
+        try (CurlResponse curlResponse = EcrCurl.post(node, "/" + index + "/_doc/").header("Content-Type", "application/json")
                 .body("{\"id\":\"2000\",\"msg\":\"test 2000\"}").execute()) {
             final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser());
             assertNotNull(map);
@@ -242,7 +239,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         }
 
         // put
-        try (CurlResponse curlResponse = EcrCurl.put(node, "/" + index + "/" + type + "/2001").header("Content-Type", "application/json")
+        try (CurlResponse curlResponse = EcrCurl.put(node, "/" + index + "/_doc/2001").header("Content-Type", "application/json")
                 .body("{\"id\":\"2001\",\"msg\":\"test 2001\"}").execute()) {
             final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser());
             assertNotNull(map);
@@ -251,14 +248,14 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
 
         // delete
         try (CurlResponse curlResponse =
-                EcrCurl.delete(node, "/" + index + "/" + type + "/2001").header("Content-Type", "application/json").execute()) {
+                EcrCurl.delete(node, "/" + index + "/_doc/2001").header("Content-Type", "application/json").execute()) {
             final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser());
             assertNotNull(map);
             assertEquals("deleted", map.get("result"));
         }
 
         // post
-        try (CurlResponse curlResponse = EcrCurl.post(node, "/" + index + "/" + type).header("Content-Type", "application/json")
+        try (CurlResponse curlResponse = EcrCurl.post(node, "/" + index + "/_doc/").header("Content-Type", "application/json")
                 .onConnect((curlRequest, connection) -> {
                     connection.setDoOutput(true);
                     try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(), "UTF-8"))) {
