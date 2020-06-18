@@ -119,9 +119,11 @@ public class ElasticsearchClusterRunner implements Closeable {
     protected static final String[] MODULE_TYPES = new String[] { //
             "org.elasticsearch.search.aggregations.matrix.MatrixAggregationPlugin", //
             "org.elasticsearch.analysis.common.CommonAnalysisPlugin", //
+            "org.elasticsearch.geo.GeoPlugin", //
             "org.elasticsearch.ingest.common.IngestCommonPlugin", //
             // "org.elasticsearch.ingest.geoip.IngestGeoIpPlugin", //
             "org.elasticsearch.ingest.useragent.IngestUserAgentPlugin", //
+            "org.elasticsearch.kibana.KibanaPlugin", //
             "org.elasticsearch.script.expression.ExpressionPlugin", //
             "org.elasticsearch.script.mustache.MustachePlugin", //
             "org.elasticsearch.painless.PainlessPlugin", //
@@ -131,7 +133,8 @@ public class ElasticsearchClusterRunner implements Closeable {
             "org.elasticsearch.index.rankeval.RankEvalPlugin", //
             "org.elasticsearch.index.reindex.ReindexPlugin", //
             "org.elasticsearch.plugin.repository.url.URLRepositoryPlugin", //
-            "org.elasticsearch.transport.Netty4Plugin"//
+            "org.elasticsearch.tasksplugin.TasksPlugin", //
+            "org.elasticsearch.transport.Netty4Plugin" //
     };
 
     protected static final String DATA_DIR = "data";
