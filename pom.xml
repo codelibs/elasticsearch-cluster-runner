@@ -31,7 +31,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<elasticsearch.version>7.8.1</elasticsearch.version>
 		<lucene.version>8.5.1</lucene.version>
-		<log4j.version>2.11.1</log4j.version>
+		<log4j.version>2.13.3</log4j.version>
 		<jna.version>5.5.0</jna.version>
 		<jts-core.version>1.15.0</jts-core.version>
 		<spatial4j.version>0.7</spatial4j.version>
