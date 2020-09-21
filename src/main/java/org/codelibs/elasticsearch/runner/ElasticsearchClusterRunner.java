@@ -444,10 +444,13 @@ public class ElasticsearchClusterRunner implements Closeable {
             final int httpPort = getAvailableHttpPort(id);
             putIfAbsent(builder, "cluster.name", clusterName);
             putIfAbsent(builder, NODE_NAME, nodeName);
-            putIfAbsent(builder, "node.master", String.valueOf(true));
-            putIfAbsent(builder, "node.data", String.valueOf(true));
             putIfAbsent(builder, "http.port", String.valueOf(httpPort));
             putIfAbsent(builder, "index.store.type", indexStoreType);
+            if (!builder.keys().contains("node.roles")) {
+                if (builder.get("node.master") == null && builder.get("node.data") == null) { // TODO remove from 8.0
+                    builder.putList("node.roles", "master", "data");
+                }
+            }
 
             print("Node Name:      " + nodeName);
             print("HTTP Port:      " + httpPort);
@@ -521,7 +524,6 @@ public class ElasticsearchClusterRunner implements Closeable {
      * @param i the number of nodes
      * @return true if the node is started.
      */
-    @SuppressWarnings("resource")
     public boolean startNode(final int i) {
         if (i >= nodeList.size()) {
             return false;
