@@ -15,7 +15,7 @@ Put elasticsearch-cluster-runner if using Maven:
     <dependency>
         <groupId>org.codelibs</groupId>
         <artifactId>elasticsearch-cluster-runner</artifactId>
-        <version>5.5.2.0</version>
+        <version>x.x.x.0</version>
     </dependency>
 
 ### Start Cluster Runner
@@ -52,7 +52,7 @@ Put elasticsearch-cluster-runner as test scope:
     <dependency>
         <groupId>org.codelibs</groupId>
         <artifactId>elasticsearch-cluster-runner</artifactId>
-        <version>5.5.2.0</version>
+        <version>x.x.x.0</version>
         <scope>test</scope>
     </dependency>
 
@@ -89,23 +89,3 @@ If you want to change the number of node, Run:
 ### Stop Cluster
 
 Type Ctrl-c or kill the process.
-
-## Others
-
-### Install Plugins
-
-This project does not have plugin command to install plugins.
-Therefore, you need to put plugins manually.
-For example, installing solr-api plugin:
-
-    $ mkdir -p es_home/plugins/solr-api
-    $ wget http://repo1.maven.org/maven2/org/codelibs/elasticsearch-solr-api/1.4.0/elasticsearch-solr-api-1.4.0.zip
-    $ unzip elasticsearch-solr-api-1.4.0.zip 
-    $ rm elasticsearch-solr-api-1.4.0.zip 
-
-
-### Issues/Questions
-
-Please file an [issue](https://github.com/codelibs/elasticsearch-cluster-runner/issues "issue").
-(Japanese forum is [here](https://github.com/codelibs/codelibs-ja-forum "here").)
-
