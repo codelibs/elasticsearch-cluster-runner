@@ -36,7 +36,7 @@ public class ClusterRunnerNode extends Node {
     }
 
     @Override
-    protected void configureNodeAndClusterIdStateListener(ClusterService clusterService) {
+    protected void configureNodeAndClusterIdStateListener(final ClusterService clusterService) {
         // nothing
     }
 }

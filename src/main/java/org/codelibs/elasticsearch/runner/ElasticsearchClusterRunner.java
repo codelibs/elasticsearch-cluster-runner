@@ -217,7 +217,7 @@ public class ElasticsearchClusterRunner implements Closeable {
                     // no-op
                 }
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             System.exit(1);
         }
     }
@@ -1146,12 +1146,12 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     }
 
-    private static XContentType xContentType(CharSequence content) {
-        int length = content.length() < 20 ? content.length() : 20;
+    private static XContentType xContentType(final CharSequence content) {
+        final int length = content.length() < 20 ? content.length() : 20;
         if (length == 0) {
             return null;
         }
-        char first = content.charAt(0);
+        final char first = content.charAt(0);
         if (first == '{') {
             return XContentType.JSON;
         }
@@ -1167,7 +1167,7 @@ public class ElasticsearchClusterRunner implements Closeable {
         // CBOR is not supported
 
         for (int i = 0; i < length; i++) {
-            char c = content.charAt(i);
+            final char c = content.charAt(i);
             if (c == '{') {
                 return XContentType.JSON;
             }
