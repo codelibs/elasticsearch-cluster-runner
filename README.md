@@ -6,7 +6,8 @@ You can use Elasticsearch Cluster Runner as Embedded Elasticsearch in your appli
 
 ## Version
 
-[Versions in Maven Repository](https://repo1.maven.org/maven2/org/codelibs/elasticsearch-cluster-runner/)
+- [Versions in Maven Repository (7.11-)](https://maven.codelibs.org/org/codelibs/elasticsearch-cluster-runner/)
+- [Versions in Maven Repository (-7.10)](https://repo1.maven.org/maven2/org/codelibs/elasticsearch-cluster-runner/)
 
 ## Run on Your Application
 
@@ -17,6 +18,26 @@ Put elasticsearch-cluster-runner if using Maven:
         <artifactId>elasticsearch-cluster-runner</artifactId>
         <version>x.x.x.0</version>
     </dependency>
+
+and add Maven repository to pom.xml:
+
+	<repositories>
+		<repository>
+			<id>central</id>
+			<url>https://repo1.maven.org/maven2</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>codelibs.org</id>
+			<name>CodeLibs Repository</name>
+			<url>https://maven.codelibs.org/</url>
+		</repository>
+	</repositories>
 
 ### Start Cluster Runner
 
@@ -62,7 +83,7 @@ and see [ElasticsearchClusterRunnerTest](https://github.com/codelibs/elasticsear
 
 ### Install Maven
 
-Download and install Maven 3 from http://maven.apache.org/.
+Download and install Maven 3 from https://maven.apache.org/.
 
 ### Clone This Project
 
