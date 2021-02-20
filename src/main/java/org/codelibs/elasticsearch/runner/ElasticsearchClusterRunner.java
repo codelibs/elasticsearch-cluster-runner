@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -111,13 +112,15 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     private static final Logger logger = LogManager.getLogger("codelibs.cluster.runner");
 
-    private static final String NODE_NAME = "node.name";
+    public static final String NODE_NAME = "node.name";
 
-    protected static final String LOG4J2_PROPERTIES = "log4j2.properties";
+    public static final String HTTP_PORT = "http.port";
 
-    protected static final String ELASTICSEARCH_YAML = "elasticsearch.yml";
+    public static final String LOG4J2_PROPERTIES = "log4j2.properties";
 
-    protected static final String[] MODULE_TYPES = new String[] { //
+    public static final String ELASTICSEARCH_YAML = "elasticsearch.yml";
+
+    public static final String[] MODULE_TYPES = new String[] { //
             "org.elasticsearch.search.aggregations.matrix.MatrixAggregationPlugin", //
             "org.elasticsearch.analysis.common.CommonAnalysisPlugin", //
             "org.elasticsearch.geo.GeoPlugin", //
@@ -138,11 +141,11 @@ public class ElasticsearchClusterRunner implements Closeable {
             "org.elasticsearch.transport.Netty4Plugin" //
     };
 
-    protected static final String DATA_DIR = "data";
+    public static final String DATA_DIR = "data";
 
-    protected static final String LOGS_DIR = "logs";
+    public static final String LOGS_DIR = "logs";
 
-    protected static final String CONFIG_DIR = "config";
+    public static final String CONFIG_DIR = "config";
 
     protected List<Node> nodeList = new ArrayList<>();
 
@@ -368,7 +371,6 @@ public class ElasticsearchClusterRunner implements Closeable {
             }
         }
 
-        print("Cluster Name: " + clusterName);
         print("Base Path:    " + basePath);
         print("Num Of Node:  " + numOfNode);
 
@@ -378,7 +380,8 @@ public class ElasticsearchClusterRunner implements Closeable {
     }
 
     protected void execute(final int id) {
-        final Path homePath = Paths.get(basePath, "node_" + id);
+        final String nodeName = "Node " + id;
+        final Path homePath = Paths.get(basePath, nodeName.replace(' ', '_').toLowerCase(Locale.ROOT));
         final Path confPath = this.confPath == null ? homePath.resolve(CONFIG_DIR) : Paths.get(this.confPath);
         final Path logsPath = this.logsPath == null ? homePath.resolve(LOGS_DIR) : Paths.get(this.logsPath);
         final Path dataPath = this.dataPath == null ? homePath.resolve(DATA_DIR) : Paths.get(this.dataPath);
@@ -441,11 +444,10 @@ public class ElasticsearchClusterRunner implements Closeable {
                 builder.remove("path.plugins");
             }
 
-            final String nodeName = "Node " + id;
             final int httpPort = getAvailableHttpPort(id);
             putIfAbsent(builder, "cluster.name", clusterName);
             putIfAbsent(builder, NODE_NAME, nodeName);
-            putIfAbsent(builder, "http.port", String.valueOf(httpPort));
+            putIfAbsent(builder, HTTP_PORT, String.valueOf(httpPort));
             putIfAbsent(builder, "index.store.type", indexStoreType);
             if (!builder.keys().contains("node.roles")) {
                 if (builder.get("node.master") == null && builder.get("node.data") == null) { // TODO remove from 8.0
@@ -453,8 +455,8 @@ public class ElasticsearchClusterRunner implements Closeable {
                 }
             }
 
-            print("Node Name:      " + nodeName);
-            print("HTTP Port:      " + httpPort);
+            print("Node Name:      " + builder.get(NODE_NAME));
+            print("HTTP Port:      " + builder.get(HTTP_PORT));
             print("Data Directory: " + dataPath);
             print("Log Directory:  " + logsPath);
 
@@ -463,7 +465,16 @@ public class ElasticsearchClusterRunner implements Closeable {
                     InternalSettingsPreparer.prepareEnvironment(settings, Collections.emptyMap(), confPath, () -> nodeName);
             if (!disableESLogger) {
                 LogConfigurator.registerErrorListener();
-                //                LogConfigurator.setNodeName(Node.NODE_NAME_SETTING.get(environment.settings()));
+                final String envNodeName = Node.NODE_NAME_SETTING
+                        .get(environment.settings());
+                try {
+                    LogConfigurator.setNodeName(envNodeName);
+                } catch (final IllegalStateException e) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Failed to set {} to a log configuration.",
+                                envNodeName, e);
+                    }
+                }
                 LogConfigurator.configure(environment);
             }
             createDir(environment.modulesFile());
