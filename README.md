@@ -1,4 +1,5 @@
 Elasticsearch Cluster Runner
+[![Java CI with Maven](https://github.com/codelibs/elasticsearch-cluster-runner/actions/workflows/maven.yml/badge.svg)](https://github.com/codelibs/elasticsearch-cluster-runner/actions/workflows/maven.yml)
 ============================
 
 This project runs Elasticsearch cluster on one JVM instance for your development/testing easily.
