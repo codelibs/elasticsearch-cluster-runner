@@ -53,19 +53,17 @@ import org.elasticsearch.action.admin.indices.close.CloseIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequestBuilder;
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequestBuilder;
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.admin.indices.flush.FlushRequestBuilder;
 import org.elasticsearch.action.admin.indices.flush.FlushResponse;
 import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeRequestBuilder;
 import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeResponse;
+import org.elasticsearch.action.admin.indices.get.GetIndexRequestBuilder;
+import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequestBuilder;
 import org.elasticsearch.action.admin.indices.open.OpenIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.open.OpenIndexResponse;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequestBuilder;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
-import org.elasticsearch.action.admin.indices.upgrade.post.UpgradeRequestBuilder;
-import org.elasticsearch.action.admin.indices.upgrade.post.UpgradeResponse;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
@@ -757,28 +755,6 @@ public class ElasticsearchClusterRunner implements Closeable {
         return actionGet;
     }
 
-    public UpgradeResponse upgrade() {
-        return upgrade(true);
-    }
-
-    public UpgradeResponse upgrade(final boolean upgradeOnlyAncientSegments) {
-        return upgrade(builder -> builder.setUpgradeOnlyAncientSegments(upgradeOnlyAncientSegments));
-    }
-
-    public UpgradeResponse upgrade(final BuilderCallback<UpgradeRequestBuilder> builder) {
-        waitForRelocation();
-        final UpgradeResponse actionGet = builder.apply(client().admin().indices().prepareUpgrade()).execute().actionGet();
-        final ShardOperationFailedException[] shardFailures = actionGet.getShardFailures();
-        if (shardFailures != null && shardFailures.length != 0) {
-            final StringBuilder buf = new StringBuilder(100);
-            for (final ShardOperationFailedException shardFailure : shardFailures) {
-                buf.append(shardFailure.toString()).append('\n');
-            }
-            onFailure(buf.toString(), actionGet);
-        }
-        return actionGet;
-    }
-
     public ForceMergeResponse forceMerge() {
         return forceMerge(-1, false, true);
     }
@@ -841,9 +817,9 @@ public class ElasticsearchClusterRunner implements Closeable {
         return indexExists(index, builder -> builder);
     }
 
-    public boolean indexExists(final String index, final BuilderCallback<IndicesExistsRequestBuilder> builder) {
-        final IndicesExistsResponse actionGet = builder.apply(client().admin().indices().prepareExists(index)).execute().actionGet();
-        return actionGet.isExists();
+    public boolean indexExists(final String index, final BuilderCallback<GetIndexRequestBuilder> builder) {
+        final GetIndexResponse actionGet = builder.apply(client().admin().indices().prepareGetIndex().setIndices(index)).execute().actionGet();
+        return actionGet.indices().length>0;
     }
 
     public AcknowledgedResponse deleteIndex(final String index) {
@@ -858,45 +834,18 @@ public class ElasticsearchClusterRunner implements Closeable {
         return actionGet;
     }
 
-    @Deprecated
-    public AcknowledgedResponse createMapping(final String index, final String type, final String mappingSource) {
-        return createMapping(index, builder -> builder.setType(type).setSource(mappingSource, xContentType(mappingSource)));
-    }
-
-    @Deprecated
-    public AcknowledgedResponse createMapping(final String index, final String type, final XContentBuilder source) {
-        return createMapping(index, builder -> builder.setType(type).setSource(source));
-    }
-
-
     public AcknowledgedResponse createMapping(final String index, final String mappingSource) {
-        return createMapping(index, builder -> builder.setType("_doc").setSource(mappingSource, xContentType(mappingSource)));
+        return createMapping(index, builder -> builder.setSource(mappingSource, xContentType(mappingSource)));
     }
 
     public AcknowledgedResponse createMapping(final String index, final XContentBuilder source) {
-        return createMapping(index, builder -> builder.setType("_doc").setSource(source));
+        return createMapping(index, builder -> builder.setSource(source));
     }
 
     public AcknowledgedResponse createMapping(final String index, final BuilderCallback<PutMappingRequestBuilder> builder) {
         final AcknowledgedResponse actionGet = builder.apply(client().admin().indices().preparePutMapping(index)).execute().actionGet();
         if (!actionGet.isAcknowledged()) {
             onFailure("Failed to create a mapping for " + index + ".", actionGet);
-        }
-        return actionGet;
-    }
-
-    @Deprecated
-    public IndexResponse insert(final String index, final String type, final String id, final String source) {
-        return insert(index, type, id,
-                builder -> builder.setSource(source, xContentType(source)).setRefreshPolicy(RefreshPolicy.IMMEDIATE));
-    }
-
-    @Deprecated
-    public IndexResponse insert(final String index, final String type, final String id,
-            final BuilderCallback<IndexRequestBuilder> builder) {
-        final IndexResponse actionGet = builder.apply(client().prepareIndex(index, type, id)).execute().actionGet();
-        if (actionGet.getResult() != Result.CREATED) {
-            onFailure("Failed to insert " + id + " into " + index + "/" + type + ".", actionGet);
         }
         return actionGet;
     }
@@ -915,21 +864,6 @@ public class ElasticsearchClusterRunner implements Closeable {
         return actionGet;
     }
 
-    @Deprecated
-    public DeleteResponse delete(final String index, final String type, final String id) {
-        return delete(index, type, id, builder -> builder.setRefreshPolicy(RefreshPolicy.IMMEDIATE));
-    }
-
-    @Deprecated
-    public DeleteResponse delete(final String index, final String type, final String id,
-            final BuilderCallback<DeleteRequestBuilder> builder) {
-        final DeleteResponse actionGet = builder.apply(client().prepareDelete(index, type, id)).execute().actionGet();
-        if (actionGet.getResult() != Result.DELETED) {
-            onFailure("Failed to delete " + id + " from " + index + "/" + type + ".", actionGet);
-        }
-        return actionGet;
-    }
-
     public DeleteResponse delete(final String index, final String id) {
         return delete(index, id, builder -> builder.setRefreshPolicy(RefreshPolicy.IMMEDIATE));
     }
@@ -943,23 +877,12 @@ public class ElasticsearchClusterRunner implements Closeable {
         return actionGet;
     }
 
-    @Deprecated
-    public SearchResponse count(final String index, final String type) {
-        return count(index);
-    }
-
     public SearchResponse count(final String index) {
         return count(index, builder -> builder);
     }
 
     public SearchResponse count(final String index, final BuilderCallback<SearchRequestBuilder> builder) {
         return builder.apply(client().prepareSearch(index).setSize(0)).execute().actionGet();
-    }
-
-    @Deprecated
-    public SearchResponse search(final String index, final String type, final QueryBuilder queryBuilder, final SortBuilder<?> sort,
-            final int from, final int size) {
-        return search(index, queryBuilder, sort, from, size);
     }
 
     public SearchResponse search(final String index, final QueryBuilder queryBuilder, final SortBuilder<?> sort, final int from,

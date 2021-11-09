@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.codelibs</groupId>
 	<artifactId>elasticsearch-cluster-runner</artifactId>
-	<version>7.15.1.1-SNAPSHOT</version>
+	<version>8.0.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>Elasticsearch Cluster Runner</name>
 	<inceptionYear>2011</inceptionYear>
@@ -25,7 +25,7 @@
   </scm>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<elasticsearch.version>7.15.1</elasticsearch.version>
+		<elasticsearch.version>8.0.0-alpha2</elasticsearch.version>
 		<lucene.version>8.9.0</lucene.version>
 		<log4j.version>2.11.1</log4j.version>
 		<jna.version>5.7.0</jna.version>
@@ -38,8 +38,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.1</version>
 				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
+					<encoding>UTF-8</encoding>
+					<release>17</release>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -71,7 +71,6 @@
 					<encoding>UTF-8</encoding>
 					<docencoding>UTF-8</docencoding>
 					<charset>UTF-8</charset>
-					<source>8</source>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -142,7 +141,16 @@
 					<groupId>org.elasticsearch</groupId>
 					<artifactId>elasticsearch-plugin-classloader</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>org.elasticsearch</groupId>
+					<artifactId>elasticsearch-lz4</artifactId>
+				</exclusion>
 			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.lib</groupId>
+			<artifactId>lz4</artifactId>
+			<version>${elasticsearch.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.codelibs.elasticsearch.lib</groupId>
@@ -297,18 +305,6 @@
 			<artifactId>junit</artifactId>
 			<version>4.13.1</version>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.elasticsearch.client</groupId>
-			<artifactId>transport</artifactId>
-			<version>${elasticsearch.version}</version>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>org.elasticsearch</groupId>
-					<artifactId>elasticsearch-ssl-config</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 	</dependencies>
 </project>

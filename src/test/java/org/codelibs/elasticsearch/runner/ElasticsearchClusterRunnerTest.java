@@ -21,7 +21,6 @@ import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newCo
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.net.InetSocketAddress;
 import java.util.Map;
 
 import org.codelibs.curl.CurlException;
@@ -31,16 +30,13 @@ import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
-import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import junit.framework.TestCase;
 
@@ -202,20 +198,6 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
 
         // optimize
         runner.forceMerge();
-
-        // upgrade
-        runner.upgrade();
-
-        // transport client
-        final Settings transportClientSettings = Settings.builder().put("cluster.name", runner.getClusterName()).build();
-        final int port = runner.node().settings().getAsInt("transport.tcp.port", 9300);
-        try (TransportClient client = new PreBuiltTransportClient(transportClientSettings)) {
-            client.addTransportAddress(new TransportAddress(new InetSocketAddress("localhost", port)));
-            final SearchResponse searchResponse =
-                    client.prepareSearch(index).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
-            assertEquals(999, searchResponse.getHits().getTotalHits().value);
-            assertEquals(10, searchResponse.getHits().getHits().length);
-        }
 
         final Node node = runner.node();
 
