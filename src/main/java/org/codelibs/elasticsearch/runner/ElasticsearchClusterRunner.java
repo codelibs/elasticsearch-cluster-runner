@@ -82,8 +82,6 @@ import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.logging.LogConfigurator;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -93,6 +91,8 @@ import org.elasticsearch.node.NodeValidationException;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentType;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -121,7 +121,6 @@ public class ElasticsearchClusterRunner implements Closeable {
     public static final String[] MODULE_TYPES = new String[] { //
             "org.elasticsearch.search.aggregations.matrix.MatrixAggregationPlugin", //
             "org.elasticsearch.analysis.common.CommonAnalysisPlugin", //
-            "org.elasticsearch.geo.GeoPlugin", //
             "org.elasticsearch.ingest.common.IngestCommonPlugin", //
             // "org.elasticsearch.ingest.geoip.IngestGeoIpPlugin", //
             "org.elasticsearch.ingest.useragent.IngestUserAgentPlugin", //
@@ -129,14 +128,15 @@ public class ElasticsearchClusterRunner implements Closeable {
             "org.elasticsearch.script.expression.ExpressionPlugin", //
             "org.elasticsearch.script.mustache.MustachePlugin", //
             "org.elasticsearch.painless.PainlessPlugin", //
-            "org.elasticsearch.index.mapper.MapperExtrasPlugin", //
+            "org.elasticsearch.legacygeo.LegacyGeoPlugin", //
+            "org.elasticsearch.index.mapper.extras.MapperExtrasPlugin", //
             "org.elasticsearch.join.ParentJoinPlugin", //
             "org.elasticsearch.percolator.PercolatorPlugin", //
             "org.elasticsearch.index.rankeval.RankEvalPlugin", //
-            "org.elasticsearch.index.reindex.ReindexPlugin", //
+            "org.elasticsearch.reindex.ReindexPlugin", //
             "org.elasticsearch.plugin.repository.url.URLRepositoryPlugin", //
-            "org.elasticsearch.tasksplugin.TasksPlugin", //
-            "org.elasticsearch.transport.Netty4Plugin" //
+            "org.elasticsearch.runtimefields.RuntimeFieldsCommonPlugin", //
+            "org.elasticsearch.transport.netty4.Netty4Plugin", //
     };
 
     public static final String DATA_DIR = "data";
@@ -802,7 +802,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     }
 
     public CreateIndexResponse createIndex(final String index, final Settings settings) {
-        return createIndex(index, builder -> builder.setSettings(settings != null ? settings : Settings.Builder.EMPTY_SETTINGS));
+        return createIndex(index, builder -> builder.setSettings(settings != null ? settings : Settings.EMPTY));
     }
 
     public CreateIndexResponse createIndex(final String index, final BuilderCallback<CreateIndexRequestBuilder> builder) {
