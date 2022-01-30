@@ -5,9 +5,13 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ master ]
+    branches:
+    - master
+    - "*.x"
   pull_request:
-    branches: [ master ]
+    branches:
+    - master
+    - "*.x"
 
 jobs:
   build:
@@ -20,6 +24,6 @@ jobs:
       uses: actions/setup-java@v2
       with:
         java-version: '17'
-        distribution: 'adopt'
+        distribution: 'temurin'
     - name: Build with Maven
       run: mvn -B package --file pom.xml
