@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2021 CodeLibs Project and the Others.
+ * Copyright 2012-2022 CodeLibs Project and the Others.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the Server Side Public License, version 1,
@@ -83,6 +83,7 @@ import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.logging.LogConfigurator;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
+import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.InternalSettingsPreparer;
@@ -817,9 +818,16 @@ public class ElasticsearchClusterRunner implements Closeable {
         return indexExists(index, builder -> builder);
     }
 
-    public boolean indexExists(final String index, final BuilderCallback<GetIndexRequestBuilder> builder) {
-        final GetIndexResponse actionGet = builder.apply(client().admin().indices().prepareGetIndex().setIndices(index)).execute().actionGet();
-        return actionGet.indices().length>0;
+    public boolean indexExists(final String index,
+            final BuilderCallback<GetIndexRequestBuilder> builder) {
+        try {
+            final GetIndexResponse actionGet = builder.apply(client().admin()
+                    .indices().prepareGetIndex().setIndices(index)).execute()
+                    .actionGet();
+            return actionGet.indices().length > 0;
+        } catch (final IndexNotFoundException e) {
+            return false;
+        }
     }
 
     public AcknowledgedResponse deleteIndex(final String index) {
