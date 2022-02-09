@@ -135,6 +135,9 @@ public class ElasticsearchClusterRunner implements Closeable {
             "org.elasticsearch.percolator.PercolatorPlugin", //
             "org.elasticsearch.index.rankeval.RankEvalPlugin", //
             "org.elasticsearch.reindex.ReindexPlugin", //
+            // "org.elasticsearch.repositories.azure.AzureRepositoryPlugin", //
+            "org.elasticsearch.repositories.gcs.GoogleCloudStoragePlugin", //
+            "org.elasticsearch.repositories.s3.S3RepositoryPlugin", //
             "org.elasticsearch.plugin.repository.url.URLRepositoryPlugin", //
             "org.elasticsearch.runtimefields.RuntimeFieldsCommonPlugin", //
             "org.elasticsearch.transport.netty4.Netty4Plugin", //
@@ -375,6 +378,7 @@ public class ElasticsearchClusterRunner implements Closeable {
 
         for (int i = 0; i < numOfNode; i++) {
             execute(i + 1);
+            System.setProperty("es.set.netty.runtime.available.processors", "false");
         }
     }
 
@@ -449,9 +453,7 @@ public class ElasticsearchClusterRunner implements Closeable {
             putIfAbsent(builder, HTTP_PORT, String.valueOf(httpPort));
             putIfAbsent(builder, "index.store.type", indexStoreType);
             if (!builder.keys().contains("node.roles")) {
-                if (builder.get("node.master") == null && builder.get("node.data") == null) { // TODO remove from 8.0
-                    builder.putList("node.roles", "master", "data");
-                }
+                builder.putList("node.roles", "master", "data");
             }
 
             print("Node Name:      " + builder.get(NODE_NAME));

@@ -25,7 +25,7 @@
   </scm>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<elasticsearch.version>8.0.0-rc1</elasticsearch.version>
+		<elasticsearch.version>8.0.0-rc2</elasticsearch.version>
 		<lucene.version>9.0.0</lucene.version>
 		<log4j.version>2.17.1</log4j.version>
 		<jna.version>5.10.0</jna.version>
@@ -184,6 +184,11 @@
 		</dependency>
 		<dependency>
 			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>kibana</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
 			<artifactId>lang-expression</artifactId>
 			<version>${elasticsearch.version}</version>
 			<!-- workaround: remove asm 5.0 -->
@@ -214,6 +219,11 @@
 		</dependency>
 		<dependency>
 			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>legacy-geo</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
 			<artifactId>mapper-extras</artifactId>
 			<version>${elasticsearch.version}</version>
 		</dependency>
@@ -237,6 +247,21 @@
 			<artifactId>reindex</artifactId>
 			<version>${elasticsearch.version}</version>
 		</dependency>
+		<!-- <dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>repository-azure</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency> -->
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>repository-gcs</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>repository-s3</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.codelibs.elasticsearch.module</groupId>
 			<artifactId>repository-url</artifactId>
@@ -244,12 +269,17 @@
 		</dependency>
 		<dependency>
 			<groupId>org.codelibs.elasticsearch.module</groupId>
-			<artifactId>transport-netty4</artifactId>
+			<artifactId>runtime-fields-common</artifactId>
 			<version>${elasticsearch.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.codelibs.elasticsearch.module</groupId>
 			<artifactId>scripting-painless-spi</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>transport-netty4</artifactId>
 			<version>${elasticsearch.version}</version>
 		</dependency>
 		<dependency>
