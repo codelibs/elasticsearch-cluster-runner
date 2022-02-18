@@ -22,6 +22,8 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.util.Map;
 
 import org.codelibs.curl.CurlException;
@@ -78,6 +80,8 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         runner.close();
         // delete all files
         runner.clean();
+        assertFalse("Check if " + runner.basePath + " is deleted", Files
+                .exists(FileSystems.getDefault().getPath(runner.basePath)));
     }
 
     public void test_runCluster() throws Exception {
