@@ -95,12 +95,13 @@ import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.xcontent.XContentBuilder;
 import org.elasticsearch.xcontent.XContentType;
+import org.elasticsearch.xcontent.json.JsonXContent;
+import org.elasticsearch.xcontent.smile.SmileXContent;
+import org.elasticsearch.xcontent.yaml.YamlXContent;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.kohsuke.args4j.ParserProperties;
-
-import com.fasterxml.jackson.dataformat.smile.SmileConstants;
 
 /**
  * ElasticsearchClusterRunner manages multiple Elasticsearch instances.
@@ -1088,15 +1089,14 @@ public class ElasticsearchClusterRunner implements Closeable {
             return null;
         }
         final char first = content.charAt(0);
-        if (first == '{') {
+        if (first == '{' || JsonXContent.jsonXContent.detectContent(content)) {
             return XContentType.JSON;
         }
         // Should we throw a failure here? Smile idea is to use it in bytes....
-        if (length > 2 && first == SmileConstants.HEADER_BYTE_1 && content.charAt(1) == SmileConstants.HEADER_BYTE_2
-                && content.charAt(2) == SmileConstants.HEADER_BYTE_3) {
+        if (SmileXContent.smileXContent.detectContent(content)) {
             return XContentType.SMILE;
         }
-        if (length > 2 && first == '-' && content.charAt(1) == '-' && content.charAt(2) == '-') {
+        if (YamlXContent.yamlXContent.detectContent(content)) {
             return XContentType.YAML;
         }
 
