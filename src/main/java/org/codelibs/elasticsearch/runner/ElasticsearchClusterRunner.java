@@ -124,6 +124,7 @@ public class ElasticsearchClusterRunner implements Closeable {
     public static final String[] MODULE_TYPES = new String[] { //
             "org.elasticsearch.search.aggregations.matrix.MatrixAggregationPlugin", //
             "org.elasticsearch.analysis.common.CommonAnalysisPlugin", //
+            "org.elasticsearch.datastreams.DataStreamsPlugin", //
             "org.elasticsearch.ingest.common.IngestCommonPlugin", //
             // "org.elasticsearch.ingest.geoip.IngestGeoIpPlugin", //
             "org.elasticsearch.ingest.useragent.IngestUserAgentPlugin", //
