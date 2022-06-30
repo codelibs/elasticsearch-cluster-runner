@@ -90,6 +90,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.InternalSettingsPreparer;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeValidationException;
+import org.elasticsearch.plugins.ClusterRunnerPluginsService;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -189,6 +190,9 @@ public class ElasticsearchClusterRunner implements Closeable {
 
     @Option(name = "-disableESLogger", usage = "Disable ESLogger.")
     protected boolean disableESLogger = false;
+
+    @Option(name = "-useConsoleAppender", usage = "Use a console appender.")
+    protected boolean useConsoleAppender = true;
 
     @Option(name = "-printOnFailure", usage = "Print an exception on a failure.")
     protected boolean printOnFailure = false;
@@ -469,12 +473,14 @@ public class ElasticsearchClusterRunner implements Closeable {
                                 envNodeName, e);
                     }
                 }
-                LogConfigurator.configure(environment);
+                LogConfigurator.configure(environment, useConsoleAppender);
             }
             createDir(environment.modulesFile());
             createDir(environment.pluginsFile());
 
-            final Node node = new ClusterRunnerNode(environment, pluginList);
+            final Node node = new ClusterRunnerNode(environment,
+                    s -> new ClusterRunnerPluginsService(s, environment,
+                            pluginList));
             node.start();
             nodeList.add(node);
             envList.add(environment);
@@ -537,7 +543,10 @@ public class ElasticsearchClusterRunner implements Closeable {
         if (!nodeList.get(i).isClosed()) {
             return false;
         }
-        final Node node = new ClusterRunnerNode(envList.get(i), pluginList);
+        final Environment environment = envList.get(i);
+        final Node node = new ClusterRunnerNode(environment,
+                s -> new ClusterRunnerPluginsService(s, environment,
+                        pluginList));
         try {
             node.start();
             nodeList.set(i, node);
@@ -1058,6 +1067,11 @@ public class ElasticsearchClusterRunner implements Closeable {
 
         public Configs disableESLogger() {
             configList.add("-disableESLogger");
+            return this;
+        }
+
+        public Configs useConsoleAppender() {
+            configList.add("-useConsoleAppender");
             return this;
         }
 

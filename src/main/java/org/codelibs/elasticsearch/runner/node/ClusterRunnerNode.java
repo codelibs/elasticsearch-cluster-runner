@@ -15,28 +15,24 @@
  */
 package org.codelibs.elasticsearch.runner.node;
 
-import java.util.Collection;
+import java.util.function.Function;
 
 import org.elasticsearch.cluster.service.ClusterService;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.plugins.PluginsService;
 
 public class ClusterRunnerNode extends Node {
 
-    private final Collection<Class<? extends Plugin>> plugins;
-
-    public ClusterRunnerNode(final Environment tmpEnv, final Collection<Class<? extends Plugin>> classpathPlugins) {
-        super(tmpEnv, classpathPlugins, true);
-        this.plugins = classpathPlugins;
-    }
-
-    public Collection<Class<? extends Plugin>> getPlugins() {
-        return plugins;
+    public ClusterRunnerNode(final Environment initialEnvironment,
+            final Function<Settings, PluginsService> pluginServiceCtor) {
+        super(initialEnvironment, pluginServiceCtor, true);
     }
 
     @Override
-    protected void configureNodeAndClusterIdStateListener(final ClusterService clusterService) {
+    protected void configureNodeAndClusterIdStateListener(
+            final ClusterService clusterService) {
         // nothing
     }
 }
