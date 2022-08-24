@@ -55,7 +55,7 @@ public class ClusterRunnerPluginsService extends PluginsService {
                     Version.CURRENT,
                     Integer.toString(Runtime.version().feature()),
                     pluginClass.getName(), null, Collections.emptyList(), false,
-                    PluginType.ISOLATED, "", false);
+                    false, false, false);
             if (logger.isTraceEnabled()) {
                 logger.trace("plugin loaded from classpath [{}]", pluginInfo);
             }
