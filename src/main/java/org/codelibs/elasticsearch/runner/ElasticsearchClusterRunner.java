@@ -45,7 +45,6 @@ import org.codelibs.elasticsearch.runner.node.ClusterRunnerNode;
 import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.ShardOperationFailedException;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequestBuilder;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequestBuilder;
@@ -75,7 +74,6 @@ import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.internal.AdminClient;
 import org.elasticsearch.client.internal.Client;
-import org.elasticsearch.client.internal.Requests;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.cluster.service.ClusterService;
@@ -685,12 +683,18 @@ public class ElasticsearchClusterRunner implements Closeable {
      * @return cluster health status
      */
     public ClusterHealthStatus ensureGreen(final String... indices) {
-        final ClusterHealthResponse actionGet = client().admin().cluster().health(
-                Requests.clusterHealthRequest(indices).waitForGreenStatus().waitForEvents(Priority.LANGUID).waitForNoRelocatingShards(true))
-                .actionGet();
+        final ClusterHealthResponse actionGet = client().admin().cluster()
+                .prepareHealth(indices).setWaitForGreenStatus()
+                .setWaitForEvents(Priority.LANGUID)
+                .setWaitForNoRelocatingShards(true).execute().actionGet();
         if (actionGet.isTimedOut()) {
-            onFailure("ensureGreen timed out, cluster state:\n" + client().admin().cluster().prepareState().get().getState() + "\n"
-                    + client().admin().cluster().preparePendingClusterTasks().get(), actionGet);
+            onFailure(
+                    "ensureGreen timed out, cluster state:\n" + client()
+                            .admin().cluster().prepareState().get().getState()
+                            + "\n"
+                            + client().admin().cluster()
+                                    .preparePendingClusterTasks().get(),
+                    actionGet);
         }
         return actionGet.getStatus();
     }
@@ -702,21 +706,35 @@ public class ElasticsearchClusterRunner implements Closeable {
      * @return cluster health status
      */
     public ClusterHealthStatus ensureYellow(final String... indices) {
-        final ClusterHealthResponse actionGet = client().admin().cluster().health(Requests.clusterHealthRequest(indices)
-                .waitForNoRelocatingShards(true).waitForYellowStatus().waitForEvents(Priority.LANGUID)).actionGet();
+        final ClusterHealthResponse actionGet = client().admin().cluster()
+                .prepareHealth(indices).setWaitForYellowStatus()
+                .setWaitForNoRelocatingShards(true)
+                .setWaitForEvents(Priority.LANGUID).execute().actionGet();
         if (actionGet.isTimedOut()) {
-            onFailure("ensureYellow timed out, cluster state:\n" + "\n" + client().admin().cluster().prepareState().get().getState() + "\n"
-                    + client().admin().cluster().preparePendingClusterTasks().get(), actionGet);
+            onFailure(
+                    "ensureYellow timed out, cluster state:\n" + "\n" + client()
+                            .admin().cluster().prepareState().get().getState()
+                            + "\n"
+                            + client().admin().cluster()
+                                    .preparePendingClusterTasks().get(),
+                    actionGet);
         }
         return actionGet.getStatus();
     }
 
     public ClusterHealthStatus waitForRelocation() {
-        final ClusterHealthRequest request = Requests.clusterHealthRequest().waitForNoRelocatingShards(true);
-        final ClusterHealthResponse actionGet = client().admin().cluster().health(request).actionGet();
+        final ClusterHealthResponse actionGet = client().admin().cluster()
+                .prepareHealth().setWaitForNoRelocatingShards(true).execute()
+                .actionGet();
         if (actionGet.isTimedOut()) {
-            onFailure("waitForRelocation timed out, cluster state:\n" + "\n" + client().admin().cluster().prepareState().get().getState()
-                    + "\n" + client().admin().cluster().preparePendingClusterTasks().get(), actionGet);
+            onFailure(
+                    "waitForRelocation timed out, cluster state:\n" + "\n"
+                            + client().admin().cluster().prepareState().get()
+                                    .getState()
+                            + "\n"
+                            + client().admin().cluster()
+                                    .preparePendingClusterTasks().get(),
+                    actionGet);
         }
         return actionGet.getStatus();
     }
