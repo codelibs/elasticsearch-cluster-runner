@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,6 +29,7 @@ import org.elasticsearch.Version;
 import org.elasticsearch.action.admin.cluster.node.info.PluginsAndModules;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
+import org.elasticsearch.jdk.ModuleQualifiedExportsService;
 
 public class ClusterRunnerPluginsService extends PluginsService {
 
@@ -84,4 +86,9 @@ public class ClusterRunnerPluginsService extends PluginsService {
         return this.overrideInfo;
     }
 
+    @Override
+    protected void addServerExportsService(
+            Map<String, List<ModuleQualifiedExportsService>> qualifiedExports) {
+        // no-op
+    }
 }
