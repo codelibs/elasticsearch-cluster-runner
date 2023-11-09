@@ -43,6 +43,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codelibs.elasticsearch.runner.node.ClusterRunnerNode;
 import org.elasticsearch.action.ActionResponse;
+import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
@@ -881,14 +882,14 @@ public class ElasticsearchClusterRunner implements Closeable {
         return actionGet;
     }
 
-    public IndexResponse insert(final String index, final String id, final String source) {
+    public DocWriteResponse insert(final String index, final String id, final String source) {
         return insert(index, id,
                 builder -> builder.setSource(source, xContentType(source)).setRefreshPolicy(RefreshPolicy.IMMEDIATE));
     }
 
-    public IndexResponse insert(final String index, final String id,
+    public DocWriteResponse insert(final String index, final String id,
             final BuilderCallback<IndexRequestBuilder> builder) {
-        final IndexResponse actionGet = builder.apply(client().prepareIndex().setIndex(index).setId(id)).execute().actionGet();
+        final DocWriteResponse actionGet = builder.apply(client().prepareIndex().setIndex(index).setId(id)).execute().actionGet();
         if (actionGet.getResult() != Result.CREATED) {
             onFailure("Failed to insert " + id + " into " + index + ".", actionGet);
         }

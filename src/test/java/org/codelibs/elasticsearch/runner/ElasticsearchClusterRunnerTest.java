@@ -28,9 +28,9 @@ import java.util.Map;
 import org.codelibs.curl.CurlException;
 import org.codelibs.curl.CurlResponse;
 import org.codelibs.elasticsearch.runner.net.EcrCurl;
+import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
@@ -144,7 +144,7 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
 
         // create 1000 documents
         for (int i = 1; i <= 1000; i++) {
-            final IndexResponse indexResponse1 = runner.insert(index, String.valueOf(i),
+            final DocWriteResponse indexResponse1 = runner.insert(index, String.valueOf(i),
                     "{\"id\":\"" + i + "\",\"msg\":\"test " + i + "\",\"order\":" + i + ",\"@timestamp\":\"2000-01-01T00:00:00\"}");
             assertEquals(Result.CREATED, indexResponse1.getResult());
         }
