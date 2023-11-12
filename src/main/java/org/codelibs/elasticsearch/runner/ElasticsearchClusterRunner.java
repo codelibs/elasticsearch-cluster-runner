@@ -142,6 +142,7 @@ public class ElasticsearchClusterRunner implements Closeable {
             // "org.elasticsearch.repositories.azure.AzureRepositoryPlugin", //
             "org.elasticsearch.repositories.gcs.GoogleCloudStoragePlugin", //
             "org.elasticsearch.repositories.s3.S3RepositoryPlugin", //
+            "org.elasticsearch.rest.root.MainRestPlugin", //
             "org.elasticsearch.plugin.repository.url.URLRepositoryPlugin", //
             "org.elasticsearch.runtimefields.RuntimeFieldsCommonPlugin", //
             "org.elasticsearch.transport.netty4.Netty4Plugin", //

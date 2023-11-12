@@ -206,6 +206,17 @@ public class ElasticsearchClusterRunnerTest extends TestCase {
         final Node node = runner.node();
 
         // http access
+        // root
+        try (CurlResponse curlResponse =
+                     EcrCurl.get(node, "/").execute()) {
+            final String content = curlResponse.getContentAsString();
+            assertNotNull(content);
+            assertTrue(content.contains("cluster_name"));
+            final Map<String, Object> map = curlResponse.getContent(EcrCurl.jsonParser());
+            assertNotNull(map);
+            assertEquals(clusterName, map.get("cluster_name").toString());
+        }
+
         // get
         try (CurlResponse curlResponse =
                 EcrCurl.get(node, "/_search").header("Content-Type", "application/json").param("q", "*:*").execute()) {
