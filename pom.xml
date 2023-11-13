@@ -166,6 +166,7 @@
 			<artifactId>plugin-classloader</artifactId>
 			<version>${elasticsearch.version}</version>
 		</dependency>
+		<!-- modules -->
 		<dependency>
 			<groupId>org.codelibs.elasticsearch.module</groupId>
 			<artifactId>aggregations</artifactId>
@@ -174,6 +175,16 @@
 		<dependency>
 			<groupId>org.codelibs.elasticsearch.module</groupId>
 			<artifactId>analysis-common</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>apm</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>data-streams</artifactId>
 			<version>${elasticsearch.version}</version>
 		</dependency>
 		<dependency>
@@ -205,21 +216,6 @@
 			<groupId>org.codelibs.elasticsearch.module</groupId>
 			<artifactId>lang-expression</artifactId>
 			<version>${elasticsearch.version}</version>
-			<!-- workaround: remove asm 5.0 -->
-			<exclusions>
-				<exclusion>
-					<groupId>org.ow2.asm</groupId>
-					<artifactId>asm</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.ow2.asm</groupId>
-					<artifactId>asm-commons</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.ow2.asm</groupId>
-					<artifactId>asm-tree</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.codelibs.elasticsearch.module</groupId>
@@ -283,22 +279,22 @@
 		</dependency>
 		<dependency>
 			<groupId>org.codelibs.elasticsearch.module</groupId>
+			<artifactId>rest-root</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codelibs.elasticsearch.module</groupId>
 			<artifactId>runtime-fields-common</artifactId>
 			<version>${elasticsearch.version}</version>
 		</dependency>
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.codelibs.elasticsearch.module</groupId>
-			<artifactId>scripting-painless-spi</artifactId>
+			<artifactId>systemd</artifactId>
 			<version>${elasticsearch.version}</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>org.codelibs.elasticsearch.module</groupId>
 			<artifactId>transport-netty4</artifactId>
-			<version>${elasticsearch.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.codelibs.elasticsearch.module</groupId>
-			<artifactId>rest-root</artifactId>
 			<version>${elasticsearch.version}</version>
 		</dependency>
 		<dependency>
