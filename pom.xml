@@ -36,7 +36,7 @@
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.10.1</version>
+				<version>3.11.0</version>
 				<configuration>
 					<encoding>UTF-8</encoding>
 					<release>17</release>
@@ -44,13 +44,32 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.22.2</version>
+				<version>3.2.2</version>
 				<configuration>
 					<includes>
 						<include>**/*Test.java</include>
 					</includes>
 					<useSystemClassLoader>false</useSystemClassLoader>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.10</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<artifactId>maven-source-plugin</artifactId>
@@ -66,7 +85,7 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.4.1</version>
+				<version>3.6.2</version>
 				<configuration>
 					<encoding>UTF-8</encoding>
 					<docencoding>UTF-8</docencoding>
@@ -76,7 +95,7 @@
 			<plugin>
 				<groupId>com.mycila</groupId>
 				<artifactId>license-maven-plugin</artifactId>
-				<version>4.1</version>
+				<version>4.3</version>
 				<configuration>
 					<header>https://www.codelibs.org/assets/license/header-sspl.txt</header>
 					<properties>
@@ -328,7 +347,7 @@
 		<dependency>
 			<groupId>org.codelibs</groupId>
 			<artifactId>curl4j</artifactId>
-			<version>1.2.6</version>
+			<version>1.2.8</version>
 		</dependency>
 		<dependency>
 			<groupId>org.locationtech.jts</groupId>
