@@ -54,7 +54,7 @@ public class ClusterRunnerPluginsService extends PluginsService {
             Plugin plugin = loadPlugin(pluginClass, settings, configPath);
             PluginDescriptor pluginInfo = new PluginDescriptor(
                     pluginClass.getName(), "classpath plugin", "NA",
-                    Version.CURRENT,
+                    Version.CURRENT.toString(),
                     Integer.toString(Runtime.version().feature()),
                     pluginClass.getName(), null, Collections.emptyList(), false,
                     false, false, false);

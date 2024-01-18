@@ -13,21 +13,27 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.codelibs.elasticsearch.runner.node;
+package org.elasticsearch.node;
 
 import java.util.function.Function;
 
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
-import org.elasticsearch.node.Node;
 import org.elasticsearch.plugins.PluginsService;
 
 public class ClusterRunnerNode extends Node {
 
     public ClusterRunnerNode(final Environment initialEnvironment,
             final Function<Settings, PluginsService> pluginServiceCtor) {
-        super(initialEnvironment, pluginServiceCtor, true);
+        super(NodeConstruction.prepareConstruction(initialEnvironment,
+                new NodeServiceProvider() {
+                    @Override
+                    PluginsService newPluginService(Environment environment,
+                            Settings settings) {
+                        return pluginServiceCtor.apply(settings);
+                    }
+                }, true));
     }
 
     @Override
