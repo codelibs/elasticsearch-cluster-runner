@@ -37,6 +37,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -46,6 +49,9 @@ import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.cluster.tasks.PendingClusterTasksRequest;
+import org.elasticsearch.action.admin.cluster.tasks.PendingClusterTasksResponse;
+import org.elasticsearch.action.admin.cluster.tasks.TransportPendingClusterTasksAction;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequestBuilder;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequestBuilder;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
@@ -54,22 +60,20 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.flush.FlushRequestBuilder;
-import org.elasticsearch.action.admin.indices.flush.FlushResponse;
 import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeRequestBuilder;
-import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeResponse;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequestBuilder;
 import org.elasticsearch.action.admin.indices.open.OpenIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.open.OpenIndexResponse;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequestBuilder;
-import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
+import org.elasticsearch.action.support.broadcast.BroadcastResponse;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.internal.AdminClient;
 import org.elasticsearch.client.internal.Client;
@@ -696,8 +700,7 @@ public class ElasticsearchClusterRunner implements Closeable {
                     "ensureGreen timed out, cluster state:\n" + client()
                             .admin().cluster().prepareState().get().getState()
                             + "\n"
-                            + client().admin().cluster()
-                                    .preparePendingClusterTasks().get(),
+                            + getClusterPendingTasks(client()),
                     actionGet);
         }
         return actionGet.getStatus();
@@ -719,8 +722,7 @@ public class ElasticsearchClusterRunner implements Closeable {
                     "ensureYellow timed out, cluster state:\n" + "\n" + client()
                             .admin().cluster().prepareState().get().getState()
                             + "\n"
-                            + client().admin().cluster()
-                                    .preparePendingClusterTasks().get(),
+                            + getClusterPendingTasks(client()),
                     actionGet);
         }
         return actionGet.getStatus();
@@ -736,24 +738,35 @@ public class ElasticsearchClusterRunner implements Closeable {
                             + client().admin().cluster().prepareState().get()
                                     .getState()
                             + "\n"
-                            + client().admin().cluster()
-                                    .preparePendingClusterTasks().get(),
+                            + getClusterPendingTasks(client()),
                     actionGet);
         }
         return actionGet.getStatus();
     }
 
-    public FlushResponse flush() {
+    public static PendingClusterTasksResponse getClusterPendingTasks(
+            Client client) {
+        try {
+            return client
+                    .execute(TransportPendingClusterTasksAction.TYPE,
+                            new PendingClusterTasksRequest())
+                    .get(10, TimeUnit.SECONDS);
+        } catch (final Exception e) {
+            throw new ClusterRunnerException("Failed to get the cluster pending tasks.", e);
+        }
+    }
+
+    public BroadcastResponse flush() {
         return flush(true);
     }
 
-    public FlushResponse flush(final boolean force) {
+    public BroadcastResponse flush(final boolean force) {
         return flush(builder -> builder.setWaitIfOngoing(true).setForce(force));
     }
 
-    public FlushResponse flush(final BuilderCallback<FlushRequestBuilder> builder) {
+    public BroadcastResponse flush(final BuilderCallback<FlushRequestBuilder> builder) {
         waitForRelocation();
-        final FlushResponse actionGet = builder.apply(client().admin().indices().prepareFlush()).execute().actionGet();
+        final BroadcastResponse actionGet = builder.apply(client().admin().indices().prepareFlush()).execute().actionGet();
         final ShardOperationFailedException[] shardFailures = actionGet.getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
             final StringBuilder buf = new StringBuilder(100);
@@ -765,13 +778,13 @@ public class ElasticsearchClusterRunner implements Closeable {
         return actionGet;
     }
 
-    public RefreshResponse refresh() {
+    public BroadcastResponse refresh() {
         return refresh(builder -> builder);
     }
 
-    public RefreshResponse refresh(final BuilderCallback<RefreshRequestBuilder> builder) {
+    public BroadcastResponse refresh(final BuilderCallback<RefreshRequestBuilder> builder) {
         waitForRelocation();
-        final RefreshResponse actionGet = builder.apply(client().admin().indices().prepareRefresh()).execute().actionGet();
+        final BroadcastResponse actionGet = builder.apply(client().admin().indices().prepareRefresh()).execute().actionGet();
         final ShardOperationFailedException[] shardFailures = actionGet.getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
             final StringBuilder buf = new StringBuilder(100);
@@ -783,17 +796,17 @@ public class ElasticsearchClusterRunner implements Closeable {
         return actionGet;
     }
 
-    public ForceMergeResponse forceMerge() {
+    public BroadcastResponse forceMerge() {
         return forceMerge(-1, false, true);
     }
 
-    public ForceMergeResponse forceMerge(final int maxNumSegments, final boolean onlyExpungeDeletes, final boolean flush) {
+    public BroadcastResponse forceMerge(final int maxNumSegments, final boolean onlyExpungeDeletes, final boolean flush) {
         return forceMerge(builder -> builder.setMaxNumSegments(maxNumSegments).setOnlyExpungeDeletes(onlyExpungeDeletes).setFlush(flush));
     }
 
-    public ForceMergeResponse forceMerge(final BuilderCallback<ForceMergeRequestBuilder> builder) {
+    public BroadcastResponse forceMerge(final BuilderCallback<ForceMergeRequestBuilder> builder) {
         waitForRelocation();
-        final ForceMergeResponse actionGet = builder.apply(client().admin().indices().prepareForceMerge()).execute().actionGet();
+        final BroadcastResponse actionGet = builder.apply(client().admin().indices().prepareForceMerge()).execute().actionGet();
         final ShardOperationFailedException[] shardFailures = actionGet.getShardFailures();
         if (shardFailures != null && shardFailures.length != 0) {
             final StringBuilder buf = new StringBuilder(100);
