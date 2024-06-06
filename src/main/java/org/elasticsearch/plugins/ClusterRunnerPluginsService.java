@@ -69,6 +69,8 @@ public class ClusterRunnerPluginsService extends PluginsService {
         pluginsLoaded.stream().map(LoadedPlugin::descriptor)
                 .map(PluginRuntimeInfo::new).forEach(pluginInfos::add);
 
+        loadExtensions(pluginsLoaded);
+
         pluginsLoaded.addAll(super.plugins());
         this.overridePlugins = List.copyOf(pluginsLoaded);
         this.overrideInfo = new PluginsAndModules(pluginInfos,
